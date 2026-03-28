@@ -97,19 +97,19 @@ function HomeContent() {
   const [customDistance, setCustomDistance] = useState("");
   const [toys, setToys] = useState("");
   const [vibe, setVibe] = useState("");
+  const [template, setTemplate] = useState("");
   const [game, setGame] = useState<GeneratedGame | null>(null);
   
   const [isGenerating, setIsGenerating] = useState(false);
   const [isComplicating, setIsComplicating] = useState(false);
   const [isRefining, setIsRefining] = useState(false);
-  const [refineText, setRefineText] = useState("");
 
   const [channel, setChannel] = useState<any>(null);
 
-  const stateRef = useRef({ distance, customDistance, toys, vibe, game });
+  const stateRef = useRef({ distance, customDistance, toys, vibe, template, game, isGenerating, isComplicating, isRefining });
   useEffect(() => {
-    stateRef.current = { distance, customDistance, toys, vibe, game };
-  }, [distance, customDistance, toys, vibe, game]);
+    stateRef.current = { distance, customDistance, toys, vibe, template, game, isGenerating, isComplicating, isRefining };
+  }, [distance, customDistance, toys, vibe, template, game, isGenerating, isComplicating, isRefining]);
 
   // Initialize Room ID
   useEffect(() => {
@@ -131,11 +131,15 @@ function HomeContent() {
         if (payload.customDistance !== undefined) setCustomDistance(payload.customDistance);
         if (payload.toys !== undefined) setToys(payload.toys);
         if (payload.vibe !== undefined) setVibe(payload.vibe);
+        if (payload.template !== undefined) setTemplate(payload.template);
         if (payload.game !== undefined) setGame(payload.game);
+        if (payload.isGenerating !== undefined) setIsGenerating(payload.isGenerating);
+        if (payload.isComplicating !== undefined) setIsComplicating(payload.isComplicating);
+        if (payload.isRefining !== undefined) setIsRefining(payload.isRefining);
       })
       .on('broadcast', { event: 'request-sync' }, () => {
         const currentState = stateRef.current;
-        if (currentState.distance || currentState.customDistance || currentState.toys || currentState.vibe || currentState.game) {
+        if (currentState.distance || currentState.customDistance || currentState.toys || currentState.vibe || currentState.template || currentState.game || currentState.isGenerating || currentState.isComplicating || currentState.isRefining) {
           newChannel.send({
             type: 'broadcast',
             event: 'state-sync',
@@ -185,8 +189,7 @@ function HomeContent() {
   const handleGenerate = async () => {
     setIsGenerating(true);
     setGame(null);
-    setRefineText("");
-    broadcastState({ game: null });
+    broadcastState({ game: null, isGenerating: true });
     
     try {
       const response = await fetch('/api/generate', {
@@ -200,6 +203,7 @@ function HomeContent() {
           customDistance,
           toys,
           vibe,
+          template,
         }),
       });
 
@@ -207,10 +211,11 @@ function HomeContent() {
 
       const data = await response.json();
       setGame(data);
-      broadcastState({ game: data });
+      broadcastState({ game: data, isGenerating: false });
     } catch (error) {
       console.error(error);
       alert('Error generating game. Please check the console.');
+      broadcastState({ isGenerating: false });
     } finally {
       setIsGenerating(false);
     }
@@ -219,6 +224,7 @@ function HomeContent() {
   const handleComplicate = async () => {
     if (!game) return;
     setIsComplicating(true);
+    broadcastState({ isComplicating: true });
 
     try {
       const response = await fetch('/api/generate', {
@@ -234,18 +240,20 @@ function HomeContent() {
 
       const data = await response.json();
       setGame(data);
-      broadcastState({ game: data });
+      broadcastState({ game: data, isComplicating: false });
     } catch (error) {
       console.error(error);
       alert('Error complicating game.');
+      broadcastState({ isComplicating: false });
     } finally {
       setIsComplicating(false);
     }
   };
 
   const handleRefine = async () => {
-    if (!game || !refineText.trim()) return;
+    if (!game) return;
     setIsRefining(true);
+    broadcastState({ isRefining: true });
 
     try {
       const response = await fetch('/api/generate', {
@@ -254,7 +262,7 @@ function HomeContent() {
         body: JSON.stringify({
           action: "refine",
           currentGame: game,
-          refinement: refineText
+          refinement: "Refine this, improve it, make it more elegant or soften it a bit"
         }),
       });
 
@@ -262,11 +270,11 @@ function HomeContent() {
 
       const data = await response.json();
       setGame(data);
-      broadcastState({ game: data });
-      setRefineText("");
+      broadcastState({ game: data, isRefining: false });
     } catch (error) {
       console.error(error);
       alert('Error refining game.');
+      broadcastState({ isRefining: false });
     } finally {
       setIsRefining(false);
     }
@@ -379,6 +387,22 @@ function HomeContent() {
             />
           </div>
 
+          <div className="space-y-3">
+            <label className="text-xs font-medium tracking-[0.15em] text-gray-400 uppercase">Game Template</label>
+            <select 
+              className="w-full bg-[#121418] border border-white/[0.08] rounded-lg p-4 text-gray-200 appearance-none focus:outline-none focus:ring-1 focus:ring-[#d97757] focus:border-[#d97757] transition-all"
+              value={template}
+              onChange={handleChange(setTemplate, 'template')}
+            >
+              <option value="">No Template (Freeform)</option>
+              <option value="Classic Truth or Dare">Classic Truth or Dare</option>
+              <option value="Roleplay Scenario">Roleplay Scenario</option>
+              <option value="Tease & Denial">Tease & Denial</option>
+              <option value="Sensory Deprivation">Sensory Deprivation</option>
+              <option value="Punishment & Reward">Punishment & Reward</option>
+            </select>
+          </div>
+
           <button 
             onClick={handleGenerate}
             disabled={isGenerating || !distance || (distance === 'custom' && !customDistance)}
@@ -398,7 +422,25 @@ function HomeContent() {
           </button>
         </div>
 
-        {game && (
+        {isGenerating ? (
+          <div className="w-full bg-[#1e2126]/80 backdrop-blur-xl p-8 sm:p-12 rounded-2xl shadow-2xl border border-white/[0.08] animate-pulse relative space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-4 border-b border-white/[0.05] pb-6">
+              <div className="h-8 bg-white/10 rounded w-1/2"></div>
+              <div className="h-6 bg-[#d97757]/20 rounded-full w-24"></div>
+            </div>
+            
+            <div className="space-y-4">
+              <div className="h-16 bg-white/5 rounded-xl w-full"></div>
+              <div className="h-16 bg-white/5 rounded-xl w-full"></div>
+              <div className="h-16 bg-white/5 rounded-xl w-full"></div>
+            </div>
+            
+            <div className="flex flex-col sm:flex-row gap-4 pt-6 mt-6 border-t border-white/[0.05]">
+              <div className="h-12 bg-white/5 rounded-lg w-full"></div>
+              <div className="h-12 bg-white/5 rounded-lg w-full"></div>
+            </div>
+          </div>
+        ) : game ? (
           <div className="w-full bg-[#1e2126]/80 backdrop-blur-xl p-8 sm:p-12 rounded-2xl shadow-2xl border border-white/[0.08] animate-[slide-up_0.5s_ease-out] relative space-y-6">
             <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-4 border-b border-white/[0.05] pb-6">
               <h2 className="text-2xl md:text-3xl font-light text-gray-100 font-serif">
@@ -441,46 +483,31 @@ function HomeContent() {
 
             <div className="flex flex-col sm:flex-row gap-4 pt-6 mt-6 border-t border-white/[0.05]">
               <button 
+                onClick={handleRefine}
+                disabled={isRefining || isComplicating}
+                className="flex-1 flex justify-center items-center gap-2 bg-[#121418] hover:bg-[#1a1d24] border border-[#d97757]/30 hover:border-[#d97757]/80 text-gray-300 hover:text-white font-medium text-sm tracking-wide uppercase py-3 px-4 rounded-lg transition-all duration-300 disabled:opacity-50"
+              >
+                {isRefining ? 'Refining...' : 'Refine'}
+              </button>
+
+              <button 
                 onClick={handleComplicate}
-                disabled={isComplicating}
+                disabled={isComplicating || isRefining}
                 className="flex-1 flex justify-center items-center gap-2 bg-[#121418] hover:bg-[#1a1d24] border border-[#d97757]/50 hover:border-[#d97757] text-[#d97757] font-medium text-sm tracking-wide uppercase py-3 px-4 rounded-lg transition-all duration-300 disabled:opacity-50"
               >
-                {isComplicating ? 'Complicating...' : 'Complicate Game'}
+                {isComplicating ? 'Complicating...' : 'Complicate'}
               </button>
               
               <button 
                 onClick={handleSaveGame}
                 className="flex-1 flex justify-center items-center gap-2 bg-[#121418] hover:bg-[#1a1d24] border border-white/[0.1] hover:border-white/[0.2] text-gray-300 font-medium text-sm tracking-wide uppercase py-3 px-4 rounded-lg transition-all duration-300"
               >
-                Save as JSON
+                Save JSON
               </button>
             </div>
 
-            <div className="pt-6 mt-6 border-t border-white/[0.05] space-y-4">
-              <label className="text-xs font-medium tracking-[0.15em] text-gray-400 uppercase">Tweak & Refine</label>
-              <div className="flex gap-3">
-                <input 
-                  type="text" 
-                  placeholder='e.g., "Make it more about blindfolds" or "Shorter duration"' 
-                  className="flex-1 bg-[#121418] border border-white/[0.08] rounded-lg p-3 text-sm text-gray-200 focus:outline-none focus:ring-1 focus:ring-[#d97757] focus:border-[#d97757] transition-all"
-                  value={refineText}
-                  onChange={(e) => setRefineText(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') handleRefine();
-                  }}
-                />
-                <button 
-                  onClick={handleRefine}
-                  disabled={isRefining || !refineText.trim()}
-                  className="bg-[#d97757] hover:bg-[#c66849] text-[#121418] font-medium text-sm tracking-wide uppercase px-6 rounded-lg transition-colors duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {isRefining ? '...' : 'Send'}
-                </button>
-              </div>
-            </div>
-
           </div>
-        )}
+        ) : null}
       </div>
     </main>
   );

@@ -4,7 +4,7 @@ import { NextResponse } from "next/server";
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { action, currentGame, refinement, distance, customDistance, toys, vibe } = body;
+    const { action, currentGame, refinement, distance, customDistance, toys, vibe, template } = body;
 
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
@@ -41,7 +41,7 @@ export async function POST(req: Request) {
         You are an expert game creator. I have a base game:
         ${JSON.stringify(currentGame)}
         
-        Please make this game more complex, adding advanced rules, escalation steps, new toys if applicable, or a twist.
+        Make this more intense/complicated. Make this game more complex, adding advanced rules, escalation steps, new toys if applicable, or a twist.
         Output ONLY a JSON object with this exact structure:
         {
           "title": "A catchy title (can be the same or updated)",
@@ -58,7 +58,7 @@ export async function POST(req: Request) {
         You are an expert game creator. I have a game:
         ${JSON.stringify(currentGame)}
         
-        The user wants to refine it with this feedback: "${refinement}"
+        Refine this. ${refinement ? `Feedback: "${refinement}"` : "Improve or soften the current game a bit, or write it more elegantly."}
         Update the game to incorporate this feedback perfectly.
         Output ONLY a JSON object with this exact structure:
         {
@@ -72,11 +72,12 @@ export async function POST(req: Request) {
       `;
     } else {
       const distanceText = distance === 'custom' ? customDistance : distance;
+      const templateText = template ? `\n        Game Template/Style: ${template} (please adapt the game strongly to this specific style)` : "";
       prompt = `
         You are an expert game creator for couples. Generate a custom NSFW game based on these parameters:
         Distance/Setup: ${distanceText || "Not specified"}
         Available Items/Toys: ${toys || "None"}
-        Vibe/Idea: ${vibe || "Surprise me"}
+        Vibe/Idea: ${vibe || "Surprise me"}${templateText}
         
         Keep the initial game VERY simple, short, and easy to digest. Do not overwhelm with rules initially.
         Output ONLY a JSON object with this exact structure:
