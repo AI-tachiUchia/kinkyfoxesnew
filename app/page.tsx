@@ -98,6 +98,7 @@ function HomeContent() {
   const [toys, setToys] = useState("");
   const [vibe, setVibe] = useState("");
   const [template, setTemplate] = useState("");
+  const [heatLevel, setHeatLevel] = useState(3);
   const [game, setGame] = useState<GeneratedGame | null>(null);
   
   const [isGenerating, setIsGenerating] = useState(false);
@@ -204,6 +205,7 @@ function HomeContent() {
           toys,
           vibe,
           template,
+          heatLevel,
         }),
       });
 
@@ -291,6 +293,29 @@ function HomeContent() {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
+  };
+
+  const handleImportGame = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const result = event.target?.result as string;
+        const importedGame = JSON.parse(result);
+        if (importedGame && importedGame.title) {
+          setGame(importedGame);
+          broadcastState({ game: importedGame });
+        } else {
+          alert('Invalid game file format.');
+        }
+      } catch (error) {
+        alert('Error parsing JSON file.');
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = '';
   };
 
   const markdownComponents = {
@@ -420,6 +445,16 @@ function HomeContent() {
               <span>Create Experience</span>
             )}
           </button>
+          
+          <label className="w-full flex justify-center items-center gap-2 bg-[#121418] hover:bg-[#1a1d24] border border-white/[0.08] hover:border-white/[0.15] text-gray-300 font-medium text-sm tracking-wide uppercase py-4 px-6 rounded-lg transition-colors duration-300 cursor-pointer mt-3">
+            <span>Import JSON</span>
+            <input 
+              type="file" 
+              accept=".json" 
+              className="hidden" 
+              onChange={handleImportGame}
+            />
+          </label>
         </div>
 
         {isGenerating ? (
@@ -504,6 +539,16 @@ function HomeContent() {
               >
                 Save JSON
               </button>
+
+              <label className="flex-1 flex justify-center items-center gap-2 bg-[#121418] hover:bg-[#1a1d24] border border-[#d97757]/30 hover:border-[#d97757]/80 text-[#d97757] font-medium text-sm tracking-wide uppercase py-3 px-4 rounded-lg transition-all duration-300 cursor-pointer">
+                Import JSON
+                <input 
+                  type="file" 
+                  accept=".json" 
+                  className="hidden" 
+                  onChange={handleImportGame}
+                />
+              </label>
             </div>
 
           </div>
