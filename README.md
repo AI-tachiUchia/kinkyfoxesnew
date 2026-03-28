@@ -11,3 +11,4 @@
 - `package.json`: Project metadata and dependencies.
 - `tsconfig.json`: TypeScript configuration (if applicable).
 - `.env`: Environment variables.
+
