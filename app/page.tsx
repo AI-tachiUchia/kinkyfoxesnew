@@ -102,13 +102,20 @@ function HomeContent() {
   const [showToybox, setShowToybox] = useState(true);
   const [showHeatLegend, setShowHeatLegend] = useState(false);
   const [isSurprising, setIsSurprising] = useState(false);
+  const [refinementText, setRefinementText] = useState("");
+  const [showRefineInput, setShowRefineInput] = useState(false);
 
+  const [savedGames, setSavedGames] = useState<{id: string, title: string, game_data: GeneratedGame, created_at: string}[]>([]);
+  const [showSavedGames, setShowSavedGames] = useState(false);
+  const [isSavingGame, setIsSavingGame] = useState(false);
+
+  const [partnerToys, setPartnerToys] = useState<Toy[]>([]);
   const [channel, setChannel] = useState<any>(null);
 
-  const stateRef = useRef({ distance, customDistance, toys, vibe, template, game, isGenerating, isComplicating, isRefining });
+  const stateRef = useRef({ distance, customDistance, toys, vibe, template, game, isGenerating, isComplicating, isRefining, savedToys });
   useEffect(() => {
-    stateRef.current = { distance, customDistance, toys, vibe, template, game, isGenerating, isComplicating, isRefining };
-  }, [distance, customDistance, toys, vibe, template, game, isGenerating, isComplicating, isRefining]);
+    stateRef.current = { distance, customDistance, toys, vibe, template, game, isGenerating, isComplicating, isRefining, savedToys };
+  }, [distance, customDistance, toys, vibe, template, game, isGenerating, isComplicating, isRefining, savedToys]);
 
   // Initialize Room ID
   useEffect(() => {
@@ -136,6 +143,9 @@ function HomeContent() {
         if (payload.isComplicating !== undefined) setIsComplicating(payload.isComplicating);
         if (payload.isRefining !== undefined) setIsRefining(payload.isRefining);
       })
+      .on('broadcast', { event: 'toybox-sync' }, ({ payload }) => {
+        if (payload.toys) setPartnerToys(payload.toys);
+      })
       .on('broadcast', { event: 'request-sync' }, () => {
         const currentState = stateRef.current;
         if (currentState.distance || currentState.customDistance || currentState.toys || currentState.vibe || currentState.template || currentState.game || currentState.isGenerating || currentState.isComplicating || currentState.isRefining) {
@@ -143,6 +153,13 @@ function HomeContent() {
             type: 'broadcast',
             event: 'state-sync',
             payload: currentState
+          });
+        }
+        if (currentState.savedToys.length > 0) {
+          newChannel.send({
+            type: 'broadcast',
+            event: 'toybox-sync',
+            payload: { toys: currentState.savedToys }
           });
         }
       })
@@ -196,8 +213,19 @@ function HomeContent() {
     (async () => {
       const headers = await authHeaders();
       fetch('/api/toys', { headers }).then(r => r.ok ? r.json() : []).then(data => setSavedToys(Array.isArray(data) ? data : []));
+      fetch('/api/saved-games', { headers }).then(r => r.ok ? r.json() : []).then(data => setSavedGames(Array.isArray(data) ? data : []));
     })();
   }, []);
+
+  useEffect(() => {
+    if (channel && savedToys.length > 0) {
+      channel.send({
+        type: 'broadcast',
+        event: 'toybox-sync',
+        payload: { toys: savedToys }
+      });
+    }
+  }, [savedToys, channel]);
 
   function parseItemsFromText(input: string): string[] {
     return input
@@ -260,6 +288,38 @@ function HomeContent() {
     }
   };
 
+  const handleBookmarkGame = async () => {
+    if (!game) return;
+    setIsSavingGame(true);
+    try {
+      const headers = await authHeaders();
+      const res = await fetch('/api/saved-games', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ title: game.title, game_data: game }),
+      });
+      if (res.ok) {
+        const [saved] = await res.json();
+        setSavedGames(prev => [saved, ...prev]);
+      }
+    } finally {
+      setIsSavingGame(false);
+    }
+  };
+
+  const handleLoadGame = (gameData: GeneratedGame) => {
+    setGame(gameData);
+    broadcastState({ game: gameData });
+  };
+
+  const handleDeleteSavedGame = async (id: string) => {
+    const headers = await authHeaders();
+    const res = await fetch(`/api/saved-games?id=${id}`, { method: 'DELETE', headers });
+    if (res.ok) {
+      setSavedGames(prev => prev.filter(g => g.id !== id));
+    }
+  };
+
   const handleSurprise = async () => {
     const distances = ['same-room', 'tied-up', 'long-distance', 'public'];
     const vibes = ['slow tease', 'intense and commanding', 'playful and silly', 'sensory deprivation', 'power play', 'romantic and tender', 'competitive', 'confessional'];
@@ -282,7 +342,7 @@ function HomeContent() {
       const response = await fetch('/api/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: "generate", distance: randomDistance, customDistance: '', toys: randomToys, vibe: randomVibe, template: randomTemplate, heatLevel }),
+        body: JSON.stringify({ action: "generate", distance: randomDistance, customDistance: '', toys: [randomToys, partnerToys.map(t => t.name).join(', ')].filter(Boolean).join(', '), vibe: randomVibe, template: randomTemplate, heatLevel }),
       });
       if (!response.ok) throw new Error('Failed');
       const data = await response.json();
@@ -313,7 +373,7 @@ function HomeContent() {
           action: "generate",
           distance,
           customDistance,
-          toys,
+          toys: [toys, partnerToys.map(t => t.name).join(', ')].filter(Boolean).join(', '),
           vibe,
           template,
           heatLevel,
@@ -375,7 +435,7 @@ function HomeContent() {
         body: JSON.stringify({
           action: "refine",
           currentGame: game,
-          refinement: "Refine this, improve it, make it more elegant or soften it a bit"
+          refinement: refinementText || undefined
         }),
       });
 
@@ -383,6 +443,8 @@ function HomeContent() {
 
       const data = await response.json();
       setGame(data);
+      setRefinementText("");
+      setShowRefineInput(false);
       broadcastState({ game: data, isRefining: false });
     } catch (error) {
       console.error(error);
@@ -544,6 +606,19 @@ function HomeContent() {
                 </div>
               </div>
             )}
+            {partnerToys.length > 0 && (
+              <div className="bg-[#121418] border border-white/[0.08] rounded-lg p-3 space-y-2">
+                <label className={labelCls}>Partner's Items</label>
+                <div className="flex flex-wrap gap-2">
+                  {partnerToys.map(toy => (
+                    <span key={toy.id}
+                      className="px-3 py-1.5 rounded-full text-xs font-medium tracking-wide bg-purple-500/15 border border-purple-400/30 text-purple-300">
+                      {toy.name}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
             <div className="space-y-2 pt-1">
               <label className={labelCls}>Available Items</label>
               <input type="text" placeholder="e.g., blindfold, ice..." className={inputCls}
@@ -626,6 +701,42 @@ function HomeContent() {
             Import JSON
             <input type="file" accept=".json" className="hidden" onChange={handleImportGame} />
           </label>
+
+          {/* Saved Games */}
+          <div className="space-y-3 pt-2 border-t border-white/[0.05]">
+            <div className="flex items-center justify-between">
+              <label className={labelCls}>Saved Games</label>
+              <button type="button" onClick={() => setShowSavedGames(v => !v)}
+                className="text-xs text-gray-500 hover:text-gray-300 transition-colors tracking-widest uppercase">
+                {showSavedGames ? 'Hide' : `Show (${savedGames.length})`}
+              </button>
+            </div>
+            {showSavedGames && (
+              <div className="bg-[#121418] border border-white/[0.08] rounded-lg p-3 space-y-2">
+                {savedGames.length > 0 ? (
+                  <div className="flex flex-col gap-2">
+                    {savedGames.map(sg => (
+                      <div key={sg.id} className="flex items-center justify-between gap-2 bg-white/5 border border-white/[0.08] rounded-lg px-4 py-3 hover:border-white/[0.15] transition-all">
+                        <button type="button" onClick={() => handleLoadGame(sg.game_data)}
+                          className="flex-1 text-left text-sm text-gray-300 hover:text-white transition-colors truncate">
+                          {sg.title}
+                        </button>
+                        <span className="text-[10px] text-gray-600 shrink-0">
+                          {new Date(sg.created_at).toLocaleDateString()}
+                        </span>
+                        <button type="button" onClick={() => handleDeleteSavedGame(sg.id)}
+                          className="text-gray-600 hover:text-red-400 transition-colors text-sm shrink-0 ml-2">
+                          ×
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-gray-600 text-xs">No saved games yet. Bookmark a game to see it here.</p>
+                )}
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Game output */}
@@ -678,23 +789,38 @@ function HomeContent() {
               )}
             </div>
 
+            {/* Refine input */}
+            {showRefineInput && (
+              <div className="flex gap-2 pt-4 border-t border-white/[0.05]">
+                <input type="text" placeholder="e.g., make round 2 longer, add a blindfold twist..."
+                  value={refinementText} onChange={e => setRefinementText(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleRefine(); } }}
+                  className="flex-1 bg-[#121418] border border-white/[0.08] rounded-lg px-4 py-3 text-gray-200 text-sm focus:outline-none focus:ring-1 focus:ring-[#d97757] focus:border-[#d97757] transition-all"
+                  disabled={isRefining} />
+                <button onClick={handleRefine} disabled={isRefining}
+                  className="px-5 py-3 bg-[#d97757]/20 hover:bg-[#d97757]/30 border border-[#d97757]/30 text-[#d97757] rounded-lg text-sm font-medium tracking-wide uppercase transition-all disabled:opacity-50">
+                  {isRefining ? '...' : 'Go'}
+                </button>
+              </div>
+            )}
+
             <div className="flex flex-col sm:flex-row gap-4 pt-6 border-t border-white/[0.05]">
-              <button onClick={handleRefine} disabled={isRefining || isComplicating}
-                className="flex-1 flex justify-center items-center gap-2 bg-[#121418] hover:bg-[#1a1d24] border border-[#d97757]/30 hover:border-[#d97757]/80 text-gray-300 hover:text-white font-medium text-sm tracking-wide uppercase py-3 px-4 rounded-lg transition-all disabled:opacity-50">
-                {isRefining ? 'Refining...' : 'Refine'}
+              <button onClick={() => setShowRefineInput(v => !v)} disabled={isRefining || isComplicating}
+                className={`flex-1 flex justify-center items-center gap-2 bg-[#121418] hover:bg-[#1a1d24] border ${showRefineInput ? 'border-[#d97757]/80 text-white' : 'border-[#d97757]/30 hover:border-[#d97757]/80 text-gray-300 hover:text-white'} font-medium text-sm tracking-wide uppercase py-3 px-4 rounded-lg transition-all disabled:opacity-50`}>
+                Refine
               </button>
               <button onClick={handleComplicate} disabled={isComplicating || isRefining}
                 className="flex-1 flex justify-center items-center gap-2 bg-[#121418] hover:bg-[#1a1d24] border border-[#d97757]/50 hover:border-[#d97757] text-[#d97757] font-medium text-sm tracking-wide uppercase py-3 px-4 rounded-lg transition-all disabled:opacity-50">
                 {isComplicating ? 'Complicating...' : 'Complicate'}
               </button>
+              <button onClick={handleBookmarkGame} disabled={isSavingGame}
+                className="flex-1 flex justify-center items-center gap-2 bg-[#121418] hover:bg-[#1a1d24] border border-[#d97757]/30 hover:border-[#d97757]/80 text-[#d97757] font-medium text-sm tracking-wide uppercase py-3 px-4 rounded-lg transition-all disabled:opacity-50">
+                {isSavingGame ? 'Saving...' : 'Bookmark'}
+              </button>
               <button onClick={handleSaveGame}
                 className="flex-1 flex justify-center items-center gap-2 bg-[#121418] hover:bg-[#1a1d24] border border-white/[0.1] hover:border-white/[0.2] text-gray-300 font-medium text-sm tracking-wide uppercase py-3 px-4 rounded-lg transition-all">
                 Save JSON
               </button>
-              <label className="flex-1 flex justify-center items-center gap-2 bg-[#121418] hover:bg-[#1a1d24] border border-[#d97757]/30 hover:border-[#d97757]/80 text-[#d97757] font-medium text-sm tracking-wide uppercase py-3 px-4 rounded-lg transition-all cursor-pointer">
-                Import JSON
-                <input type="file" accept=".json" className="hidden" onChange={handleImportGame} />
-              </label>
             </div>
           </div>
         ) : null}
