@@ -4,7 +4,7 @@ import { NextResponse } from "next/server";
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { action, currentGame, refinement, distance, customDistance, toys, vibe, template, heatLevel = 3 } = body;
+    const { action, language = "de", currentGame, refinement, distance, customDistance, toys, vibe, template, heatLevel = 3 } = body;
     const heatDescriptions: Record<number, string> = {
       1: "very soft and romantic — sensual teasing only, nothing explicitly sexual",
       2: "mildly spicy — flirtatious and suggestive, light adult content",
@@ -13,6 +13,10 @@ export async function POST(req: Request) {
       5: "maximum heat — no-holds-barred, as filthy and kinky as possible",
     };
     const heatInstruction = `Heat level: ${heatLevel}/5 — ${heatDescriptions[heatLevel] ?? heatDescriptions[3]}. Calibrate ALL content and rule intensity to match this exactly.`;
+
+    const langInstruction = language === "de" 
+      ? "IMPORTANT: Generate the ENTIRE game (all titles, durations, and content) strictly in GERMAN language." 
+      : "IMPORTANT: Generate the ENTIRE game (all titles, durations, and content) strictly in ENGLISH language.";
 
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
@@ -50,6 +54,8 @@ export async function POST(req: Request) {
         ${JSON.stringify(currentGame)}
         
         Make this more intense/complicated. Make this game more complex, adding advanced rules, escalation steps, new toys if applicable, or a twist.
+        
+        ${langInstruction}
         Output ONLY a JSON object with this exact structure:
         {
           "title": "A catchy title (can be the same or updated)",
@@ -68,6 +74,8 @@ export async function POST(req: Request) {
         
         Refine this. ${refinement ? `Feedback: "${refinement}"` : "Improve or soften the current game a bit, or write it more elegantly."}
         Update the game to incorporate this feedback perfectly.
+        
+        ${langInstruction}
         Output ONLY a JSON object with this exact structure:
         {
           "title": "Updated title if needed",
@@ -89,6 +97,8 @@ export async function POST(req: Request) {
         ${heatInstruction}
 
         Keep the initial game VERY simple, short, and easy to digest. Do not overwhelm with rules initially.
+        
+        ${langInstruction}
         Output ONLY a JSON object with this exact structure:
         {
           "title": "A catchy title for the game",
