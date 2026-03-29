@@ -37,3 +37,56 @@ body {
 h1, h2, h3, h4, h5, h6 {
   letter-spacing: -0.02em;
 }
+
+.font-pixel {
+  font-family: var(--font-pixel), monospace;
+}
+
+/* Pixel/arcade button press effect */
+.btn-pixel {
+  box-shadow: 3px 3px 0px #7c2d12;
+  transition: box-shadow 0.08s, transform 0.08s;
+}
+.btn-pixel:active {
+  box-shadow: 1px 1px 0px #7c2d12;
+  transform: translate(2px, 2px);
+}
+
+.btn-pixel-outline {
+  box-shadow: 3px 3px 0px rgba(217,119,87,0.3);
+  transition: box-shadow 0.08s, transform 0.08s;
+}
+.btn-pixel-outline:active {
+  box-shadow: 1px 1px 0px rgba(217,119,87,0.3);
+  transform: translate(2px, 2px);
+}
+
+/* Scanline overlay for CRT effect - used on canvas wrapper */
+.scanlines::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0, 0, 0, 0.1) 2px,
+    rgba(0, 0, 0, 0.1) 4px
+  );
+  pointer-events: none;
+  z-index: 10;
+}
+
+/* Pixel card border */
+.pixel-card {
+  border: 1px solid rgba(255,255,255,0.05);
+  box-shadow: 0 0 0 1px rgba(217,119,87,0.04), inset 0 1px 0 rgba(255,255,255,0.02);
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+.animate-blink {
+  animation: blink 1.1s step-end infinite;
+}

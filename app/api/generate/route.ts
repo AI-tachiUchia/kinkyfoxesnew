@@ -4,7 +4,15 @@ import { NextResponse } from "next/server";
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { action, currentGame, refinement, distance, customDistance, toys, vibe, template } = body;
+    const { action, currentGame, refinement, distance, customDistance, toys, vibe, template, heatLevel = 3 } = body;
+    const heatDescriptions: Record<number, string> = {
+      1: "very soft and romantic — sensual teasing only, nothing explicitly sexual",
+      2: "mildly spicy — flirtatious and suggestive, light adult content",
+      3: "moderately kinky — clearly adult, some NSFW rules and escalation",
+      4: "quite intense — explicit, bold rules, significant power play or edginess",
+      5: "maximum heat — no-holds-barred, as filthy and kinky as possible",
+    };
+    const heatInstruction = `Heat level: ${heatLevel}/5 — ${heatDescriptions[heatLevel] ?? heatDescriptions[3]}. Calibrate ALL content and rule intensity to match this exactly.`;
 
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
@@ -78,7 +86,8 @@ export async function POST(req: Request) {
         Distance/Setup: ${distanceText || "Not specified"}
         Available Items/Toys: ${toys || "None"}
         Vibe/Idea: ${vibe || "Surprise me"}${templateText}
-        
+        ${heatInstruction}
+
         Keep the initial game VERY simple, short, and easy to digest. Do not overwhelm with rules initially.
         Output ONLY a JSON object with this exact structure:
         {
