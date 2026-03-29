@@ -157,7 +157,7 @@ const QMARK: [number, number][] = [
 function drawSprite(ctx: CanvasRenderingContext2D, spr: string[], ox: number, oy: number, flip = false) {
   const w = spr[0].length;
   spr.forEach((row, ri) => {
-    [...row].forEach((ch, ci) => {
+    row.split('').forEach((ch, ci) => {
       const col = PAL[ch];
       if (!col) return;
       ctx.fillStyle = col;
