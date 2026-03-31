@@ -4,9 +4,13 @@ import { useState, useEffect, Suspense, useRef } from "react";
 import ReactMarkdown from "react-markdown";
 import { useSearchParams, useRouter } from "next/navigation";
 import { supabase } from "../lib/supabase";
+import { useLanguage } from "./context/LanguageContext";
+import { translations } from "../lib/translations";
 import PixelScene from "./components/PixelScene";
 
 function Auth() {
+  const { language, setLanguage } = useLanguage();
+  const t = translations[language];
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -29,18 +33,18 @@ function Auth() {
       <div className="absolute bottom-0 right-[-10%] w-[600px] h-[600px] bg-purple-500/5 rounded-full blur-[140px] pointer-events-none" />
 
       <div className="z-10 w-full max-w-md bg-[#1e2126]/60 backdrop-blur-md p-8 sm:p-10 rounded-2xl shadow-xl border border-white/[0.05]">
-        <h1 className="text-3xl font-light text-center text-gray-200 mb-2 font-serif tracking-wide">Private Access</h1>
-        <p className="text-center text-gray-400 text-sm mb-8 tracking-widest uppercase font-light">Partner Portal Login</p>
+        <h1 className="text-3xl font-light text-center text-gray-200 mb-2 font-serif tracking-wide">{t.login.title}</h1>
+        <p className="text-center text-gray-400 text-sm mb-8 tracking-widest uppercase font-light">{t.login.subtitle}</p>
 
         <form onSubmit={handleLogin} className="space-y-6">
           <div className="space-y-2">
-            <label className="text-xs font-medium tracking-[0.15em] text-gray-400 uppercase">Email</label>
+            <label className="text-xs font-medium tracking-[0.15em] text-gray-400 uppercase">{t.login.email}</label>
             <input type="email" value={email} onChange={(e) => setEmail(e.target.value)}
               className="w-full bg-[#121418] border border-white/[0.08] rounded-lg p-4 text-gray-200 focus:outline-none focus:ring-1 focus:ring-[#d97757] focus:border-[#d97757] transition-all"
               required />
           </div>
           <div className="space-y-2">
-            <label className="text-xs font-medium tracking-[0.15em] text-gray-400 uppercase">Password</label>
+            <label className="text-xs font-medium tracking-[0.15em] text-gray-400 uppercase">{t.login.password}</label>
             <input type="password" value={password} onChange={(e) => setPassword(e.target.value)}
               className="w-full bg-[#121418] border border-white/[0.08] rounded-lg p-4 text-gray-200 focus:outline-none focus:ring-1 focus:ring-[#d97757] focus:border-[#d97757] transition-all"
               required />
@@ -52,7 +56,7 @@ function Auth() {
 
           <button type="submit" disabled={loading}
             className="w-full bg-gray-200 hover:bg-white text-[#121418] font-medium text-sm tracking-wide uppercase py-4 px-6 rounded-lg transition-colors duration-300 disabled:opacity-50">
-            {loading ? 'Authenticating...' : 'Sign In'}
+            {loading ? t.login.loading : t.login.button}
           </button>
         </form>
       </div>
@@ -78,7 +82,9 @@ type Toy = {
   description?: string;
 };
 
-function HomeContent() {
+function HomeContent({ session }: { session: any }) {
+  const { language, setLanguage } = useLanguage();
+  const t = translations[language];
   const searchParams = useSearchParams();
   const router = useRouter();
   const roomId = searchParams.get('room');
@@ -115,6 +121,19 @@ function HomeContent() {
 
   const [partnerToys, setPartnerToys] = useState<Toy[]>([]);
   const [channel, setChannel] = useState<any>(null);
+
+  // Presence & activity
+  const [partnerName, setPartnerName] = useState<string | null>(null);
+  const [partnerOnline, setPartnerOnline] = useState(false);
+  const [partnerActivity, setPartnerActivity] = useState<string | null>(null);
+  const [toasts, setToasts] = useState<{ id: number; message: string }[]>([]);
+  const myDisplayName = session?.user?.email?.split('@')[0] || 'You';
+
+  const addToast = (message: string) => {
+    const id = Date.now();
+    setToasts(prev => [...prev, { id, message }]);
+    setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 4000);
+  };
 
   const stateRef = useRef({ distance, customDistance, toys, vibe, template, game, isGenerating, isComplicating, isRefining, savedToys });
   useEffect(() => {
@@ -167,8 +186,37 @@ function HomeContent() {
           });
         }
       })
-      .subscribe((status) => {
+      .on('presence', { event: 'sync' }, () => {
+        const state = newChannel.presenceState();
+        const others = Object.values(state).flat().filter(
+          (p: any) => p.user_id !== session?.user?.id || 'anonymous'
+        );
+        if (others.length > 0) {
+          const partner = others[0] as any;
+          setPartnerName(partner.display_name);
+          setPartnerOnline(true);
+          setPartnerActivity(partner.activity || null);
+        } else {
+          setPartnerOnline(false);
+          setPartnerActivity(null);
+        }
+      })
+      .on('presence', { event: 'join' }, ({ newPresences }: any) => {
+        const partner = newPresences.find((p: any) => p.user_id !== session?.user?.id || 'anonymous');
+        if (partner) addToast(`${partner.display_name} joined the session`);
+      })
+      .on('presence', { event: 'leave' }, ({ leftPresences }: any) => {
+        const partner = leftPresences.find((p: any) => p.user_id !== session?.user?.id || 'anonymous');
+        if (partner) addToast(`${partner.display_name} left the session`);
+      })
+      .subscribe(async (status) => {
         if (status === 'SUBSCRIBED') {
+          await newChannel.track({
+            user_id: session?.user?.id || 'anonymous',
+            display_name: myDisplayName,
+            activity: 'adjusting settings...',
+            online_at: new Date().toISOString(),
+          });
           newChannel.send({
             type: 'broadcast',
             event: 'request-sync',
@@ -182,6 +230,22 @@ function HomeContent() {
       supabase.removeChannel(newChannel);
     };
   }, [roomId]);
+
+  // Broadcast activity when view changes
+  useEffect(() => {
+    if (!channel) return;
+    const activityMap: Record<string, string> = {
+      setup: 'adjusting settings...',
+      generating: 'generating a game...',
+      game: 'reading the game...',
+    };
+    channel.track({
+      user_id: session?.user?.id || 'anonymous',
+      display_name: myDisplayName,
+      activity: activityMap[view] || 'browsing...',
+      online_at: new Date().toISOString(),
+    });
+  }, [view, channel]);
 
   const broadcastState = (updates: any) => {
     if (channel) {
@@ -348,7 +412,7 @@ function HomeContent() {
       const response = await fetch('/api/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: "generate", distance: randomDistance, customDistance: '', toys: [randomToys, partnerToys.map(t => t.name).join(', ')].filter(Boolean).join(', '), vibe: randomVibe, template: randomTemplate, heatLevel }),
+        body: JSON.stringify({ action: "generate", language, distance: randomDistance, customDistance: '', toys: [randomToys, partnerToys.map(t => t.name).join(', ')].filter(Boolean).join(', '), vibe: randomVibe, template: randomTemplate, heatLevel }),
       });
       if (!response.ok) throw new Error('Failed');
       const data = await response.json();
@@ -395,6 +459,7 @@ function HomeContent() {
         },
         body: JSON.stringify({
           action: "generate",
+          language,
           distance,
           customDistance,
           toys: [toys, partnerToys.map(t => t.name).join(', ')].filter(Boolean).join(', '),
@@ -431,6 +496,7 @@ function HomeContent() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           action: "complicate",
+          language,
           currentGame: game
         }),
       });
@@ -460,6 +526,7 @@ function HomeContent() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           action: "refine",
+          language,
           currentGame: game,
           refinement: refinementText || undefined
         }),
@@ -535,20 +602,26 @@ function HomeContent() {
   return (
     <main className="min-h-screen bg-[#121418] relative overflow-hidden font-sans">
       {/* Global nav */}
+      
       <div className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-6 py-4">
-        {view !== 'setup' && (
-          <button onClick={handleBackToSetup}
-            className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors group">
-            <svg className="w-5 h-5 transform group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 19l-7-7 7-7" />
-            </svg>
-            <span className="text-xs tracking-widest uppercase">Settings</span>
-          </button>
-        )}
-        <div className="flex-1" />
+        <div className="flex gap-4 items-center">
+          {view !== 'setup' && (
+            <button onClick={handleBackToSetup}
+              className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors group">
+              <svg className="w-5 h-5 transform group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+              </svg>
+              <span className="text-xs tracking-widest uppercase">{t.nav.settings}</span>
+            </button>
+          )}
+          <div className="flex bg-[#121418] border border-white/[0.08] rounded-full p-1">
+            <button onClick={() => setLanguage('de')} className={`text-[10px] tracking-widest uppercase px-3 py-1 rounded-full transition-all ${language === 'de' ? 'bg-[#d97757] text-[#121418] font-bold' : 'text-gray-500 hover:text-gray-300'}`}>DE</button>
+            <button onClick={() => setLanguage('en')} className={`text-[10px] tracking-widest uppercase px-3 py-1 rounded-full transition-all ${language === 'en' ? 'bg-[#d97757] text-[#121418] font-bold' : 'text-gray-500 hover:text-gray-300'}`}>EN</button>
+          </div>
+        </div>
         <button onClick={() => supabase.auth.signOut()}
           className="text-xs text-gray-500 hover:text-gray-300 transition-colors tracking-widest uppercase">
-          Sign Out
+          {t.nav.signOut}
         </button>
       </div>
 
@@ -571,11 +644,11 @@ function HomeContent() {
                   <button onClick={handleCopyLink}
                     className="text-xs tracking-widest uppercase text-[#d97757] bg-[#d97757]/10 hover:bg-[#d97757]/20 px-4 py-2 rounded-full border border-[#d97757]/20 transition-all flex items-center gap-2">
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
-                    Copy Partner Link
+                    {t.nav.copyLink}
                   </button>
                 )}
               </div>
-              <p className="text-gray-400 text-sm tracking-widest uppercase font-light">Curated experiences for you</p>
+              <p className="text-gray-400 text-sm tracking-widest uppercase font-light">{t.login.heroSubtitle}</p>
             </div>
 
             {/* Pixel animation */}
@@ -587,27 +660,27 @@ function HomeContent() {
             <div className="w-full bg-[#1e2126]/60 backdrop-blur-md p-8 sm:p-10 rounded-2xl shadow-xl border border-white/[0.05] space-y-8">
 
               <div className="space-y-3">
-                <label className={labelCls}>Distance / Setup</label>
+                <label className={labelCls}>{t.setup.distanceLabel}</label>
                 <select className={inputCls} value={distance} onChange={handleChange(setDistance, 'distance')}>
-                  <option value="" disabled>Select your setup...</option>
-                  <option value="same-room">Same Room</option>
-                  <option value="tied-up">One Partner Restrained</option>
-                  <option value="long-distance">Long Distance (Video/Text)</option>
-                  <option value="public">Public / Discreet</option>
-                  <option value="custom">Custom</option>
+                  <option value="" disabled>{t.login.selectSetup}</option>
+                  <option value="same-room">{t.login.optSameRoom}</option>
+                  <option value="tied-up">{t.login.optRestrained}</option>
+                  <option value="long-distance">{t.login.optLongDistance}</option>
+                  <option value="public">{t.login.optPublic}</option>
+                  <option value="custom">{t.login.optCustom}</option>
                 </select>
                 {distance === 'custom' && (
-                  <input type="text" placeholder="Enter custom setup..." className={inputCls}
+                  <input type="text" placeholder={t.login.customSetupPlaceholder} className={inputCls}
                     value={customDistance} onChange={handleChange(setCustomDistance, 'customDistance')} />
                 )}
               </div>
 
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <label className={labelCls}>Toybox</label>
+                  <label className={labelCls}>{t.setup.toyboxLabel}</label>
                   <button type="button" onClick={() => setShowToybox(v => !v)}
                     className="text-xs text-gray-500 hover:text-gray-300 transition-colors tracking-widest uppercase">
-                    {showToybox ? 'Hide' : 'Show'}
+                    {showToybox ? t.setup.toyboxToggleHide : t.setup.toyboxToggleShow}
                   </button>
                 </div>
                 {showToybox && (
@@ -636,23 +709,23 @@ function HomeContent() {
                         ))}
                       </div>
                     ) : (
-                      <p className="text-gray-600 text-xs">No items saved yet.</p>
+                      <p className="text-gray-600 text-xs">{t.login.noItemsSaved}</p>
                     )}
                     <div className="flex gap-2">
-                      <input type="text" placeholder="e.g. vibrators, rope and a camera..."
+                      <input type="text" placeholder={t.setup.addToyPlaceholder}
                         value={newToyName} onChange={e => setNewToyName(e.target.value)}
                         onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleAddToy(); } }}
                         className="flex-1 bg-[#1e2126] border border-white/[0.08] rounded-lg px-3 py-2 text-gray-200 text-sm focus:outline-none focus:ring-1 focus:ring-[#d97757] focus:border-[#d97757] transition-all" />
                       <button type="button" onClick={handleAddToy} disabled={isAddingToy || !newToyName.trim()}
                         className="px-4 py-2 bg-[#d97757]/20 hover:bg-[#d97757]/30 border border-[#d97757]/30 text-[#d97757] rounded-lg text-sm font-medium transition-all disabled:opacity-50">
-                        {isAddingToy ? '...' : 'Save'}
+                        {isAddingToy ? '...' : t.setup.addToyButton}
                       </button>
                     </div>
                   </div>
                 )}
                 {partnerToys.length > 0 && (
                   <div className="bg-[#121418] border border-white/[0.08] rounded-lg p-3 space-y-2">
-                    <label className={labelCls}>Partner&apos;s Items</label>
+                    <label className={labelCls}>{t.login.partnersItems}</label>
                     <div className="flex flex-wrap gap-2">
                       {partnerToys.map(toy => (
                         <span key={toy.id}
@@ -664,39 +737,39 @@ function HomeContent() {
                   </div>
                 )}
                 <div className="space-y-2 pt-1">
-                  <label className={labelCls}>Available Items</label>
+                  <label className={labelCls}>{t.login.availableItemsLabel}</label>
                   <input type="text" placeholder="e.g., blindfold, ice..." className={inputCls}
                     value={toys} onChange={handleChange(setToys, 'toys')} />
                 </div>
               </div>
 
               <div className="space-y-3">
-                <label className={labelCls}>Atmosphere</label>
+                <label className={labelCls}>{t.login.atmosphereLabel}</label>
                 <textarea placeholder="e.g., slow tease, intense, sensory deprivation..."
                   className={`${inputCls} h-28 resize-none`}
                   value={vibe} onChange={handleChange(setVibe, 'vibe')} />
               </div>
 
               <div className="space-y-3">
-                <label className={labelCls}>Game Template</label>
+                <label className={labelCls}>{t.login.gameTemplateLabel}</label>
                 <select className={inputCls} value={template} onChange={handleChange(setTemplate, 'template')}>
-                  <option value="">No Template (Freeform)</option>
-                  <option value="Classic Truth or Dare">Classic Truth or Dare</option>
-                  <option value="Roleplay Scenario">Roleplay Scenario</option>
-                  <option value="Tease & Denial">Tease & Denial</option>
-                  <option value="Sensory Deprivation">Sensory Deprivation</option>
-                  <option value="Punishment & Reward">Punishment & Reward</option>
+                  <option value="">{t.login.tplNone}</option>
+                  <option value="Classic Truth or Dare">{t.login.tplTruthDare}</option>
+                  <option value="Roleplay Scenario">{t.login.tplRoleplay}</option>
+                  <option value="Tease & Denial">{t.login.tplTeaseDenial}</option>
+                  <option value="Sensory Deprivation">{t.login.tplSensory}</option>
+                  <option value="Punishment & Reward">{t.login.tplPunishment}</option>
                 </select>
               </div>
 
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <label className={labelCls}>
-                    Heat Level — <span className="text-[#d97757]">{['Cozy', 'Flirty', 'Heated', 'Spicy', 'Unhinged'][heatLevel - 1]}</span>
+                    Heat Level — <span className="text-[#d97757]">{t.setup.heatLevels[heatLevel - 1]}</span>
                   </label>
                   <button type="button" onClick={() => setShowHeatLegend(v => !v)}
                     className="text-xs text-gray-500 hover:text-[#d97757] transition-colors tracking-widest uppercase">
-                    {showHeatLegend ? 'Hide' : 'What does this mean?'}
+                    {showHeatLegend ? t.setup.toyboxToggleHide : t.login.whatDoesThisMean}
                   </button>
                 </div>
                 <input type="range" min={1} max={5} value={heatLevel}
@@ -727,27 +800,27 @@ function HomeContent() {
                 <button onClick={handleGenerate}
                   disabled={isGenerating || !distance || (distance === 'custom' && !customDistance)}
                   className="flex-1 flex justify-center items-center gap-2 bg-[#d97757] hover:bg-[#c66849] text-[#121418] font-medium text-sm tracking-wide uppercase py-4 px-6 rounded-lg transition-colors duration-300 disabled:opacity-50 disabled:cursor-not-allowed">
-                  Create Experience
+                  {t.setup.generateButton}
                 </button>
                 <button onClick={handleSurprise} disabled={isGenerating}
                   className="flex-shrink-0 flex justify-center items-center gap-2 bg-[#121418] hover:bg-[#1a1d24] border border-[#d97757]/40 hover:border-[#d97757] text-[#d97757] font-medium text-sm tracking-wide uppercase py-4 px-5 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed">
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" /></svg>
-                  Surprise
+                  {t.setup.surpriseMeButton}
                 </button>
               </div>
 
               <label className="w-full flex justify-center items-center gap-2 bg-[#121418] hover:bg-[#1a1d24] border border-white/[0.08] hover:border-white/[0.15] text-gray-300 font-medium text-sm tracking-wide uppercase py-4 px-6 rounded-lg transition-colors cursor-pointer">
-                Import JSON
+                {t.login.importJson}
                 <input type="file" accept=".json" className="hidden" onChange={handleImportGame} />
               </label>
 
               {/* Saved Games */}
               <div className="space-y-3 pt-2 border-t border-white/[0.05]">
                 <div className="flex items-center justify-between">
-                  <label className={labelCls}>Saved Games</label>
+                  <label className={labelCls}>{t.savedGames.title}</label>
                   <button type="button" onClick={() => setShowSavedGames(v => !v)}
                     className="text-xs text-gray-500 hover:text-gray-300 transition-colors tracking-widest uppercase">
-                    {showSavedGames ? 'Hide' : `Show (${savedGames.length})`}
+                    {showSavedGames ? t.setup.toyboxToggleHide : `${t.setup.toyboxToggleShow} (${savedGames.length})`}
                   </button>
                 </div>
                 {showSavedGames && (
@@ -771,7 +844,7 @@ function HomeContent() {
                         ))}
                       </div>
                     ) : (
-                      <p className="text-gray-600 text-xs">No saved games yet. Bookmark a game to see it here.</p>
+                      <p className="text-gray-600 text-xs">{t.login.savedGamesEmpty}</p>
                     )}
                   </div>
                 )}
@@ -881,7 +954,7 @@ function HomeContent() {
                       : 'bg-white/[0.06] border border-white/[0.08] text-gray-300 hover:bg-white/[0.1] hover:text-white'
                   }`}>
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
-                  Refine
+                  {t.game.refineButton}
                 </button>
                 <button onClick={handleComplicate} disabled={isComplicating || isRefining}
                   className="flex-1 flex justify-center items-center gap-2 bg-white/[0.06] backdrop-blur-md border border-[#d97757]/30 hover:border-[#d97757]/60 text-[#d97757] rounded-xl py-3.5 px-4 text-sm font-medium tracking-wide uppercase transition-all disabled:opacity-50">
@@ -890,7 +963,7 @@ function HomeContent() {
                   ) : (
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
                   )}
-                  {isComplicating ? '...' : 'Escalate'}
+                  {isComplicating ? '...' : t.game.complicateButton}
                 </button>
                 <button onClick={handleBookmarkGame} disabled={isSavingGame}
                   className="flex justify-center items-center gap-2 bg-white/[0.06] backdrop-blur-md border border-white/[0.08] hover:border-[#d97757]/40 text-gray-300 hover:text-[#d97757] rounded-xl py-3.5 px-4 text-sm transition-all disabled:opacity-50">
@@ -910,6 +983,8 @@ function HomeContent() {
 }
 
 export default function Home() {
+  const { language } = useLanguage();
+  const t = translations[language];
   const [session, setSession] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
@@ -929,7 +1004,7 @@ export default function Home() {
   }, []);
 
   if (loading) {
-    return <div className="min-h-screen bg-[#121418] flex items-center justify-center text-gray-400">Loading...</div>;
+    return <div className="min-h-screen bg-[#121418] flex items-center justify-center text-gray-400">{t.login.loading}</div>;
   }
 
   if (!session) {
@@ -937,8 +1012,8 @@ export default function Home() {
   }
 
   return (
-    <Suspense fallback={<div className="min-h-screen bg-[#121418] flex items-center justify-center text-[#d97757]">Loading...</div>}>
-      <HomeContent />
+    <Suspense fallback={<div className="min-h-screen bg-[#121418] flex items-center justify-center text-[#d97757]">{t.login.loading}</div>}>
+      <HomeContent session={session} />
     </Suspense>
   );
 }

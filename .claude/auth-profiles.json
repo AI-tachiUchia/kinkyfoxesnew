@@ -1,0 +1,25 @@
+{
+  "version": 1,
+  "profiles": {
+    "google:default": {
+      "type": "api_key",
+      "provider": "google",
+      "key": "AIzaSyDm0X2v0mQrxhHE6nGZ9PMb5J8WrN7wMDs"
+    },
+    "anthropic:default": {
+      "type": "api_key",
+      "provider": "anthropic",
+      "key": "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"
+    }
+  },
+  "lastGood": {
+    "google": "google:default"
+  },
+  "usageStats": {
+    "google:default": {
+      "errorCount": 0,
+      "lastUsed": 1774701104610,
+      "lastFailureAt": 1774699624498
+    }
+  }
+}
