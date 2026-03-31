@@ -40,6 +40,9 @@ next-env.d.ts
 .vscode/
 .idea/
 
+# Claude auth (contains API keys)
+.claude/auth-profiles.json
+
 # Custom for KinkyFox
 *.7z
 *.tmp
