@@ -29,6 +29,9 @@ yarn-error.log*
 .env*.local
 .env
 
+#Vertex Express Key
+vertex-express-key
+
 # vercel
 .vercel
 
@@ -47,3 +50,5 @@ next-env.d.ts
 *.7z
 *.tmp
 gitrepo_deploy_key*
+vertex-express-key.json
+*:Zone.Identifier

@@ -6,7 +6,9 @@ import { useSearchParams, useRouter } from "next/navigation";
 import { supabase } from "../lib/supabase";
 import { useLanguage } from "./context/LanguageContext";
 import { translations } from "../lib/translations";
-import PixelScene from "./components/PixelScene";
+import FoxDisplay from "./components/FoxDisplay";
+import FoxImage from "./components/FoxImage";
+import FoxLoadingVideo from "./components/FoxLoadingVideo";
 
 function Auth() {
   const { language, setLanguage } = useLanguage();
@@ -548,6 +550,41 @@ function HomeContent({ session }: { session: any }) {
     }
   };
 
+  const handleExportPdf = () => {
+    if (!game) return;
+    const sections = game.sections
+      ? game.sections.map((s: { title: string; content: string }, i: number) =>
+          `<div class="section"><div class="section-num">${String(i + 1).padStart(2, '0')}</div><div><h3>${s.title}</h3><p>${s.content.replace(/\n/g, '<br/>')}</p></div></div>`
+        ).join('')
+      : `<p>${(game.description || '').replace(/\n/g, '<br/>')}</p>`;
+
+    const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${game.title}</title>
+<style>
+  @page { margin: 20mm; }
+  body { font-family: Georgia, serif; color: #1a1a1a; max-width: 600px; margin: 0 auto; }
+  h1 { font-size: 24px; font-weight: 300; margin-bottom: 4px; }
+  .duration { font-size: 11px; text-transform: uppercase; letter-spacing: 2px; color: #d97757; margin-bottom: 24px; display: inline-block; }
+  hr { border: none; border-top: 1px solid #ddd; margin: 20px 0; }
+  .section { display: flex; gap: 16px; margin-bottom: 18px; }
+  .section-num { font-size: 10px; font-family: monospace; color: #d97757; padding-top: 3px; flex-shrink: 0; }
+  h3 { font-size: 15px; margin: 0 0 6px; }
+  p { font-size: 13px; line-height: 1.6; margin: 0; color: #333; }
+  .footer { margin-top: 32px; font-size: 10px; color: #999; text-align: center; }
+</style></head><body>
+  <h1>${game.title}</h1>
+  <span class="duration">${game.duration}</span>
+  <hr/>
+  ${sections}
+  <div class="footer">Kinky Fox Games</div>
+</body></html>`;
+
+    const win = window.open('', '_blank');
+    if (!win) return;
+    win.document.write(html);
+    win.document.close();
+    win.onload = () => { win.print(); };
+  };
+
   const handleSaveGame = () => {
     if (!game) return;
     const blob = new Blob([JSON.stringify(game, null, 2)], { type: 'application/json' });
@@ -596,8 +633,8 @@ function HomeContent({ session }: { session: any }) {
     strong: ({node, ...props}: any) => <strong className="font-medium text-gray-200" {...props} />,
   };
 
-  const inputCls = "w-full bg-[#121418] border border-white/[0.08] rounded-lg p-4 text-gray-200 focus:outline-none focus:ring-1 focus:ring-[#d97757] focus:border-[#d97757] transition-all";
-  const labelCls = "text-xs font-medium tracking-[0.15em] text-gray-400 uppercase";
+  const inputCls = "w-full bg-[#0e1015] border border-white/[0.07] rounded-xl p-4 text-gray-200 text-sm focus:outline-none focus:ring-1 focus:ring-[#d97757]/60 focus:border-[#d97757]/40 transition-all duration-300 hover:border-white/[0.12] placeholder-gray-600";
+  const labelCls = "text-[11px] font-semibold tracking-[0.18em] text-gray-500 uppercase";
 
   return (
     <main className="min-h-screen bg-[#121418] relative overflow-hidden font-sans">
@@ -651,13 +688,14 @@ function HomeContent({ session }: { session: any }) {
               <p className="text-gray-400 text-sm tracking-widest uppercase font-light">{t.login.heroSubtitle}</p>
             </div>
 
-            {/* Pixel animation */}
-            <div className="w-full max-w-sm opacity-80">
-              <PixelScene isGenerating={isGenerating} game={game} heatLevel={heatLevel} />
+            {/* Fox display */}
+            <div className="w-full max-w-sm">
+              <FoxDisplay isGenerating={isGenerating} game={game} heatLevel={heatLevel} />
             </div>
 
             {/* Config card */}
-            <div className="w-full bg-[#1e2126]/60 backdrop-blur-md p-8 sm:p-10 rounded-2xl shadow-xl border border-white/[0.05] space-y-8">
+            <div className="w-full bg-gradient-to-b from-[#1c1f25]/80 to-[#181b20]/80 backdrop-blur-xl p-7 sm:p-9 rounded-2xl shadow-2xl border border-white/[0.06] space-y-7"
+              style={{ boxShadow: '0 8px 40px rgba(0,0,0,0.3), 0 0 1px rgba(217,119,87,0.1), inset 0 1px 0 rgba(255,255,255,0.03)' }}>
 
               <div className="space-y-3">
                 <label className={labelCls}>{t.setup.distanceLabel}</label>
@@ -796,20 +834,23 @@ function HomeContent({ session }: { session: any }) {
                 )}
               </div>
 
-              <div className="flex gap-3">
+              <div className="flex gap-3 pt-2">
                 <button onClick={handleGenerate}
                   disabled={isGenerating || !distance || (distance === 'custom' && !customDistance)}
-                  className="flex-1 flex justify-center items-center gap-2 bg-[#d97757] hover:bg-[#c66849] text-[#121418] font-medium text-sm tracking-wide uppercase py-4 px-6 rounded-lg transition-colors duration-300 disabled:opacity-50 disabled:cursor-not-allowed">
+                  className="flex-1 flex justify-center items-center gap-2 bg-gradient-to-r from-[#d97757] to-[#c66849] hover:from-[#e0856a] hover:to-[#d97757] text-[#0e1015] font-semibold text-sm tracking-wide uppercase py-4 px-6 rounded-xl transition-all duration-300 disabled:opacity-40 disabled:cursor-not-allowed"
+                  style={{ boxShadow: '0 4px 20px rgba(217,119,87,0.25), inset 0 1px 0 rgba(255,255,255,0.15)' }}>
                   {t.setup.generateButton}
                 </button>
                 <button onClick={handleSurprise} disabled={isGenerating}
-                  className="flex-shrink-0 flex justify-center items-center gap-2 bg-[#121418] hover:bg-[#1a1d24] border border-[#d97757]/40 hover:border-[#d97757] text-[#d97757] font-medium text-sm tracking-wide uppercase py-4 px-5 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed">
+                  className="flex-shrink-0 flex justify-center items-center gap-2 bg-[#0e1015] hover:bg-[#161920] border border-[#d97757]/30 hover:border-[#d97757]/70 text-[#d97757] font-semibold text-sm tracking-wide uppercase py-4 px-5 rounded-xl transition-all duration-300 disabled:opacity-40 disabled:cursor-not-allowed"
+                  style={{ boxShadow: '0 2px 12px rgba(217,119,87,0.08)' }}>
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" /></svg>
                   {t.setup.surpriseMeButton}
                 </button>
               </div>
 
-              <label className="w-full flex justify-center items-center gap-2 bg-[#121418] hover:bg-[#1a1d24] border border-white/[0.08] hover:border-white/[0.15] text-gray-300 font-medium text-sm tracking-wide uppercase py-4 px-6 rounded-lg transition-colors cursor-pointer">
+              <label className="w-full flex justify-center items-center gap-2 bg-[#0e1015] hover:bg-[#161920] border border-white/[0.06] hover:border-white/[0.12] text-gray-400 hover:text-gray-300 font-medium text-xs tracking-widest uppercase py-3.5 px-6 rounded-xl transition-all duration-300 cursor-pointer">
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" /></svg>
                 {t.login.importJson}
                 <input type="file" accept=".json" className="hidden" onChange={handleImportGame} />
               </label>
@@ -857,28 +898,7 @@ function HomeContent({ session }: { session: any }) {
       {/* ═══════ GENERATING VIEW ═══════ */}
       {view === 'generating' && (
         <div className={`min-h-screen flex flex-col items-center justify-center p-6 ${viewAnim}`}>
-          <div className="relative flex flex-col items-center gap-8">
-            {/* Pulsing glow orb */}
-            <div className="absolute w-[300px] h-[300px] bg-[#d97757]/20 rounded-full blur-[100px] pulse-glow" />
-
-            {/* Pixel scene as loading animation */}
-            <div className="relative w-full max-w-xs opacity-90 z-10">
-              <PixelScene isGenerating={true} game={null} heatLevel={heatLevel} />
-            </div>
-
-            {/* Loading text */}
-            <div className="z-10 text-center space-y-3">
-              <p className="text-lg font-serif text-gray-200 font-light breathe">
-                Crafting your experience...
-              </p>
-              <div className="flex items-center justify-center gap-1.5">
-                {[0, 1, 2].map(i => (
-                  <div key={i} className="w-1.5 h-1.5 rounded-full bg-[#d97757]"
-                    style={{ animation: `blink 1.4s ease-in-out ${i * 0.2}s infinite` }} />
-                ))}
-              </div>
-            </div>
-          </div>
+          <FoxLoadingVideo />
         </div>
       )}
 
@@ -887,37 +907,56 @@ function HomeContent({ session }: { session: any }) {
         <div className={`min-h-screen flex flex-col ${viewAnim}`}>
           {/* Game content — scrollable area with bottom padding for action bar */}
           <div className="flex-1 overflow-y-auto game-scroll pt-16 pb-32 px-6 sm:px-12 md:px-24">
-            <div className="max-w-2xl mx-auto space-y-8">
+            <div className="max-w-2xl mx-auto space-y-6">
 
-              {/* Title header */}
-              <div className="float-up space-y-4 pt-4">
-                <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-4">
-                  <h2 className="text-3xl md:text-4xl font-light text-gray-100 font-serif leading-tight">{game.title}</h2>
-                  <span className="shrink-0 text-xs tracking-widest uppercase text-[#d97757] bg-[#d97757]/10 px-4 py-1.5 rounded-full border border-[#d97757]/20">
-                    {game.duration}
-                  </span>
+              {/* Hero card with fox display + title */}
+              <div className="float-up bg-[#1e2126]/60 backdrop-blur-md rounded-2xl border border-white/[0.06] overflow-hidden">
+                {/* Compact fox display with particles */}
+                <div className="px-5 pt-5">
+                  <FoxDisplay isGenerating={false} game={game} heatLevel={heatLevel} />
                 </div>
-                <div className="h-px bg-gradient-to-r from-[#d97757]/40 via-[#d97757]/10 to-transparent" />
+                {/* Title area */}
+                <div className="px-6 pb-5 pt-3 space-y-3">
+                  <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-3">
+                    <h2 className="text-2xl md:text-3xl font-light text-gray-100 font-serif leading-tight">{game.title}</h2>
+                    <span className="shrink-0 text-[10px] tracking-widest uppercase text-[#d97757] bg-[#d97757]/10 px-4 py-1.5 rounded-full border border-[#d97757]/20 font-medium">
+                      {game.duration}
+                    </span>
+                  </div>
+                </div>
               </div>
 
-              {/* Sections */}
-              <div className="font-sans leading-relaxed space-y-4">
+              {/* Tree-style sections */}
+              <div className="font-sans leading-relaxed relative">
                 {game.sections ? (
-                  game.sections.map((section, idx) => (
-                    <details key={idx}
-                      className={`group bg-[#1e2126]/60 backdrop-blur-md border border-white/[0.06] rounded-2xl overflow-hidden transition-all duration-300 open:bg-[#1e2126]/80 open:border-white/[0.12] float-up-d${Math.min(idx + 1, 3)}`}
-                      open={idx === 0}>
-                      <summary className="cursor-pointer p-6 font-serif text-lg text-gray-200 hover:text-[#d97757] transition-colors flex justify-between items-center select-none">
-                        {section.title}
-                        <span className="text-[#d97757]/60 group-hover:text-[#d97757] transform group-open:rotate-180 transition-all duration-300">
-                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 9l-7 7-7-7" /></svg>
-                        </span>
-                      </summary>
-                      <div className="px-6 pb-6 pt-2 border-t border-white/[0.03]">
-                        <ReactMarkdown components={markdownComponents}>{section.content}</ReactMarkdown>
+                  <div className="relative">
+                    {/* Vertical tree line */}
+                    <div className="absolute left-[19px] top-4 bottom-4 w-px bg-gradient-to-b from-[#d97757]/40 via-[#d97757]/20 to-transparent" />
+
+                    {game.sections.map((section, idx) => (
+                      <div key={idx} className={`relative flex gap-4 mb-4 last:mb-0 float-up-d${Math.min(idx + 1, 3)}`}>
+                        {/* Tree node dot */}
+                        <div className="relative shrink-0 flex flex-col items-center pt-5">
+                          <div className="w-[10px] h-[10px] rounded-full border-2 border-[#d97757] bg-[#121418] z-10 shadow-[0_0_8px_rgba(217,119,87,0.3)]" />
+                        </div>
+
+                        {/* Section card */}
+                        <div className="flex-1 bg-[#1e2126]/60 backdrop-blur-md border border-white/[0.06] rounded-xl overflow-hidden hover:border-white/[0.12] transition-all duration-300 group">
+                          <div className="px-5 py-4 flex items-center gap-3 border-b border-white/[0.04]">
+                            <span className="text-[10px] font-medium tracking-widest uppercase text-[#d97757]/60 bg-[#d97757]/8 px-2 py-0.5 rounded font-mono">
+                              {String(idx + 1).padStart(2, '0')}
+                            </span>
+                            <h3 className="font-serif text-base text-gray-200 group-hover:text-[#d97757] transition-colors">
+                              {section.title}
+                            </h3>
+                          </div>
+                          <div className="px-5 py-4">
+                            <ReactMarkdown components={markdownComponents}>{section.content}</ReactMarkdown>
+                          </div>
+                        </div>
                       </div>
-                    </details>
-                  ))
+                    ))}
+                  </div>
                 ) : (
                   <div className="text-gray-300 float-up-d1 bg-[#1e2126]/60 backdrop-blur-md border border-white/[0.06] rounded-2xl p-6">
                     <ReactMarkdown components={markdownComponents}>{game.description || ''}</ReactMarkdown>
@@ -946,7 +985,7 @@ function HomeContent({ session }: { session: any }) {
           {/* Floating action bar */}
           <div className="fixed bottom-0 left-0 right-0 z-40">
             <div className="bg-gradient-to-t from-[#121418] via-[#121418]/95 to-transparent pt-8 pb-6 px-6">
-              <div className="max-w-2xl mx-auto flex items-center gap-3">
+              <div className="max-w-2xl mx-auto flex items-center gap-2.5">
                 <button onClick={() => setShowRefineInput(v => !v)} disabled={isRefining || isComplicating}
                   className={`flex-1 flex justify-center items-center gap-2 backdrop-blur-md rounded-xl py-3.5 px-4 text-sm font-medium tracking-wide uppercase transition-all disabled:opacity-50 ${
                     showRefineInput
@@ -968,6 +1007,11 @@ function HomeContent({ session }: { session: any }) {
                 <button onClick={handleBookmarkGame} disabled={isSavingGame}
                   className="flex justify-center items-center gap-2 bg-white/[0.06] backdrop-blur-md border border-white/[0.08] hover:border-[#d97757]/40 text-gray-300 hover:text-[#d97757] rounded-xl py-3.5 px-4 text-sm transition-all disabled:opacity-50">
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" /></svg>
+                </button>
+                <button onClick={handleExportPdf}
+                  className="flex justify-center items-center gap-2 bg-white/[0.06] backdrop-blur-md border border-white/[0.08] hover:border-white/[0.15] text-gray-400 hover:text-gray-200 rounded-xl py-3.5 px-4 text-sm transition-all"
+                  title={t.game.exportPdfButton}>
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 17h6m-6-4h6m-6-4h2" /></svg>
                 </button>
                 <button onClick={handleSaveGame}
                   className="flex justify-center items-center gap-2 bg-white/[0.06] backdrop-blur-md border border-white/[0.08] hover:border-white/[0.15] text-gray-400 hover:text-gray-200 rounded-xl py-3.5 px-4 text-sm transition-all">
