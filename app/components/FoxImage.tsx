@@ -6,6 +6,7 @@ type FoxImageKey =
   | 'dice_game' | 'worship' | 'leash' | 'massage' | 'interrogation' | 'tease_denial'
   | 'card_game' | 'aftercare' | 'ice_play' | 'servant'
   | 'nurse' | 'pirate' | 'selfie' | 'yoga' | 'chef' | 'vampire' | 'dance' | 'whisper' | 'throne' | 'pillow_fight'
+  | 'heavy_bondage' | 'suspension' | 'collar_crawl' | 'wax_play'
   | 'default';
 
 const FOX_IMAGES: Record<FoxImageKey, string> = {
@@ -35,6 +36,10 @@ const FOX_IMAGES: Record<FoxImageKey, string> = {
   whisper: '/fox-assets/Game-Related/fox_whisper_secret.png',
   throne: '/fox-assets/Game-Related/fox_throne_royal.png',
   pillow_fight: '/fox-assets/Game-Related/fox_pillow_fight.png',
+  heavy_bondage: '/fox-assets/Game-Related/fox_pixel_heavy_bondage.png',
+  suspension: '/fox-assets/Game-Related/fox_pixel_suspension.png',
+  collar_crawl: '/fox-assets/Game-Related/fox_pixel_collar_crawl.png',
+  wax_play: '/fox-assets/Game-Related/fox_pixel_wax_play.png',
   default: '/fox-assets/fox_normal_look.png',
 };
 
@@ -45,7 +50,9 @@ function detectFoxImage(game: any): FoxImageKey {
   // Specific scenarios first (most specific matches)
   if (t.includes('blindfold') || t.includes('augenbinde'))
     return 'blindfold';
-  if (t.includes('massage') || t.includes('sensory') || t.includes('sinne') || t.includes('candle') || t.includes('kerze') || t.includes('wax') || t.includes('wachs'))
+  if (t.includes('wax') || t.includes('wachs') || t.includes('candle') || t.includes('kerze'))
+    return 'wax_play';
+  if (t.includes('massage') || t.includes('sensory') || t.includes('sinne'))
     return 'massage';
   if (t.includes('ice') || t.includes('temperature') || t.includes('eis') || t.includes('temperatur') || t.includes('cold') || t.includes('kalt') || t.includes('hot') || t.includes('heiß'))
     return 'ice_play';
@@ -55,11 +62,17 @@ function detectFoxImage(game: any): FoxImageKey {
     return 'servant';
   if (t.includes('cuddle') || t.includes('aftercare') || t.includes('kuschel') || t.includes('nachsorge') || t.includes('cozy') || t.includes('gemütlich'))
     return 'aftercare';
+  if (t.includes('crawl') || t.includes('kriechen') || t.includes('all fours') || t.includes('allen vieren'))
+    return 'collar_crawl';
   if (t.includes('leash') || t.includes('collar') || t.includes('pet') || t.includes('leine') || t.includes('halsband') || t.includes('haustier'))
     return 'leash';
   if (t.includes('worship') || t.includes('kneel') || t.includes('knien') || t.includes('submit') || t.includes('unterwer') || t.includes('devotion') || t.includes('hingabe'))
     return 'worship';
-  if (t.includes('rope') || t.includes('tied') || t.includes('bond') || t.includes('restrain') || t.includes('cuff') || t.includes('shibari') || t.includes('fesseln') || t.includes('seil'))
+  if (t.includes('suspen') || t.includes('aerial') || t.includes('hänge') || t.includes('aufhäng') || t.includes('swing') || t.includes('schaukel'))
+    return 'suspension';
+  if (t.includes('shibari') || t.includes('kinbaku') || t.includes('heavy bond') || t.includes('elaborate rope') || t.includes('kunstfesseln'))
+    return 'heavy_bondage';
+  if (t.includes('rope') || t.includes('tied') || t.includes('bond') || t.includes('restrain') || t.includes('cuff') || t.includes('fesseln') || t.includes('seil'))
     return 'bondage';
   if (t.includes('dice') || t.includes('würfel') || t.includes('roll') || t.includes('board') || t.includes('brett'))
     return 'dice_game';
@@ -103,6 +116,7 @@ function detectFoxImage(game: any): FoxImageKey {
     'dice_game', 'worship', 'leash', 'massage', 'interrogation', 'tease_denial',
     'card_game', 'aftercare', 'ice_play', 'servant',
     'nurse', 'pirate', 'selfie', 'yoga', 'chef', 'vampire', 'dance', 'whisper', 'throne', 'pillow_fight',
+    'heavy_bondage', 'suspension', 'collar_crawl', 'wax_play',
   ];
   return allKeys[hash % allKeys.length];
 }
