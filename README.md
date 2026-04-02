@@ -8,12 +8,15 @@ A real-time couples' roleplay game built with Next.js, Supabase, and AI-powered 
   - `page.tsx` — Main game UI (three-view system: setup, generating, game)
   - `layout.tsx` — Root layout with global providers
   - `globals.css` — Global styles, theme, and view transition animations
-  - `api/generate/route.ts` — AI scene generation endpoint (Gemini 2.5 Flash)
+  - `api/generate/route.ts` — AI game generation endpoint (Claude Haiku 4.5)
   - `api/toys/route.ts` — CRUD API for saved toys
   - `api/saved-games/route.ts` — CRUD API for bookmarked games
-  - `components/PixelScene.tsx` — Pixel art scene renderer
-- `public/` — Static assets (images, fonts)
-- `.env` — Environment variables (Supabase URL/key, Gemini API key)
+  - `components/FoxDisplay.tsx` — Fox character display with particle effects and dialogue bar
+  - `components/FoxImage.tsx` — Fox image switcher with crossfade transitions (scene-aware)
+  - `components/FoxLoadingVideo.tsx` — Fox loading animation for generation view
+  - `components/PixelScene.tsx` — Pixel art scene renderer (legacy, still available)
+- `public/fox-assets/` — Fox character images (transparent PNGs, 512×492)
+- `.env` — Environment variables (Supabase URL/key, Anthropic API key)
 
 ## Features
 
@@ -70,9 +73,41 @@ The Refine button in the game view opens an inline text input where users descri
 
 Partners join a shared session via link (`?room=<id>`). All session state (distance, toys, vibe, template, generated game, loading states) and toybox contents broadcast in real-time using Supabase Realtime broadcast channels.
 
-### AI Scene Generation
+### Fox Character Display
 
-The `/api/generate` endpoint uses Gemini 2.5 Flash to generate, complicate ("escalate"), or refine games. Supports 5 heat levels with calibrated prompt instructions. Returns structured JSON with title, duration, and collapsible sections.
+Replaced the old pixel art renderer with real fox character images that change based on game context:
+
+- **Scene detection**: Analyzes game content for keywords (blindfold, bondage, punishment, tease, etc.) and selects a matching fox image
+- **7 fox variants**: Default, blindfold, bondage/shibari, police costume, teacher, stewardess, sexy photos — all with transparent backgrounds
+- **Crossfade transitions**: Smooth 700ms opacity crossfade when the scene changes
+- **Particle effects**: Floating pixel-art particles (hearts, chains, flames, stars) overlay the fox image, themed to the current scene
+- **Dialogue bar**: Context-aware text below the fox display
+
+### Export as PDF
+
+The game view includes a PDF export button (document icon in the action bar). Opens a clean, print-optimized view with the game title, duration, and all sections formatted for paper. Uses the browser's native print-to-PDF — no server-side rendering or extra dependencies.
+
+### AI Game Generation
+
+The `/api/generate` endpoint uses Claude Haiku 4.5 to generate, escalate, or refine games. The system prompt includes a comprehensive game design toolkit with 13 mechanic categories:
+
+- Dares & challenges, power dynamics, sensory play, restraint & bondage, tease & denial, roleplay scenarios, escalation systems, randomization, competition & stakes, communication tools (safewords), physical challenges, psychological play, props & environment
+
+**Key design rules enforced by the prompt:**
+- All challenges, dares, and prompts are pre-generated (never "come up with your own")
+- Clear, unambiguous rules — how turns work, what triggers escalation, how the game ends
+- Enough content to fill the stated duration (8-12+ challenges minimum)
+- Built-in escalation arc from warm-up to peak intensity
+- Safety (traffic light safewords) and aftercare reminders for intense games
+
+**Heat levels** (1-5) each have detailed guidance controlling language intensity, explicitness, and which mechanics are appropriate — from "sensual teasing, eye contact" at level 1 to "no-holds-barred, heavy BDSM" at level 5.
+
+**Actions:**
+| Action | Description |
+|--------|-------------|
+| `generate` | Create a new game from setup parameters |
+| `complicate` | Escalate an existing game — more rounds, twists, bolder stakes |
+| `refine` | Polish a game based on player feedback or general improvement |
 
 ## Setup
 
@@ -80,7 +115,7 @@ The `/api/generate` endpoint uses Gemini 2.5 Flash to generate, complicate ("esc
 2. `npm install`
 3. Copy `.env.example` to `.env` and fill in:
    - `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-   - `GEMINI_API_KEY`
+   - `ANTHROPIC_API_KEY`
 4. Create Supabase tables (see below)
 5. `npm run dev`
 
@@ -104,6 +139,18 @@ The `/api/generate` endpoint uses Gemini 2.5 Flash to generate, complicate ("esc
 | `created_at` | timestamptz | Auto-generated |
 
 Both tables use RLS with policies scoped to `auth.uid() = user_id`.
+
+---
+
+## Session Log — 2026-04-02
+
+### What was done
+
+1. **Fox image transparency & resize** — Removed backgrounds from all fox images (JPG→PNG with transparency via sharp). Resized from ~2100×2016 to 512×492 (~95% smaller). Fixed FoxDisplay sizing to fit within its border box (`object-contain`, max 160px height).
+
+2. **PDF export** — Added export-as-PDF button to the game view action bar. Opens a styled, print-optimized page with game title, duration, and sections. Translations for DE and EN.
+
+3. **Game generation prompt rewrite** — Replaced thin prompts with a comprehensive system prompt containing a 13-category game design toolkit. Enforces pre-generated content, clear rules, built-in escalation, and safety. Expanded heat level descriptions. Increased max_tokens from 2048 to 4096. Rewrote all three action prompts (generate, escalate, refine).
 
 ---
 
