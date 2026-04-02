@@ -1,24 +1,41 @@
 'use client';
 import { useRef, useEffect, useState } from 'react';
+import { useLanguage } from '../context/LanguageContext';
 
 const VIDEO_SRC = '/fox-assets/Game-Related/Video_Animation_Request_and_Generation.mp4';
 
-const TIPS = [
-  'The fox is getting into character...',
-  'Selecting the finest scenarios...',
-  'Warming up the imagination...',
-  'Consulting the book of mischief...',
-  'Tying up loose ends... literally.',
-  'Shuffling the naughty deck...',
-  'Fox is putting on the outfit...',
-  'Almost ready to play...',
-  'Choosing the perfect vibe...',
-  'Setting the mood lighting...',
-];
+const TIPS: Record<string, string[]> = {
+  de: [
+    'Der Fuchs schlüpft in seine Rolle...',
+    'Die besten Szenarien werden ausgewählt...',
+    'Die Fantasie wird aufgewärmt...',
+    'Das Buch der Ungezogenheiten wird konsultiert...',
+    'Lose Enden werden verknotet... wortwörtlich.',
+    'Das freche Kartendeck wird gemischt...',
+    'Der Fuchs zieht sich um...',
+    'Fast bereit zum Spielen...',
+    'Der perfekte Vibe wird gewählt...',
+    'Die Stimmungsbeleuchtung wird eingestellt...',
+  ],
+  en: [
+    'The fox is getting into character...',
+    'Selecting the finest scenarios...',
+    'Warming up the imagination...',
+    'Consulting the book of mischief...',
+    'Tying up loose ends... literally.',
+    'Shuffling the naughty deck...',
+    'Fox is putting on the outfit...',
+    'Almost ready to play...',
+    'Choosing the perfect vibe...',
+    'Setting the mood lighting...',
+  ],
+};
 
 export default function FoxLoadingVideo() {
+  const { language } = useLanguage();
+  const tips = TIPS[language] || TIPS.en;
   const videoRef = useRef<HTMLVideoElement>(null);
-  const [tipIndex, setTipIndex] = useState(() => Math.floor(Math.random() * TIPS.length));
+  const [tipIndex, setTipIndex] = useState(() => Math.floor(Math.random() * tips.length));
   const [fade, setFade] = useState(true);
   const [videoReady, setVideoReady] = useState(false);
   const [elapsed, setElapsed] = useState(0);
@@ -27,12 +44,12 @@ export default function FoxLoadingVideo() {
     const interval = setInterval(() => {
       setFade(false);
       setTimeout(() => {
-        setTipIndex(prev => (prev + 1) % TIPS.length);
+        setTipIndex(prev => (prev + 1) % tips.length);
         setFade(true);
       }, 400);
     }, 3500);
     return () => clearInterval(interval);
-  }, []);
+  }, [tips.length]);
 
   useEffect(() => {
     const t = setInterval(() => setElapsed(e => e + 1), 1000);
@@ -86,7 +103,7 @@ export default function FoxLoadingVideo() {
         <p className={`text-center text-[15px] font-serif text-gray-300/90 font-light italic transition-all duration-500 ${
           fade ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-3'
         }`} style={{ minHeight: '1.5em' }}>
-          {TIPS[tipIndex]}
+          {tips[tipIndex]}
         </p>
 
         {/* Progress bar */}

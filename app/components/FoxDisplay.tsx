@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useRef, useCallback } from 'react';
 import { detectFoxImage, FOX_IMAGES } from './FoxImage';
+import { useLanguage } from '../context/LanguageContext';
 
 // Particle shapes
 const HEART: [number, number][] = [
@@ -52,19 +53,37 @@ function getParticleConfig(scene: SceneKey): { shape: [number, number][]; color:
   }
 }
 
-function getDialogue(scene: SceneKey, title?: string): string {
+const DIALOGUES: Record<string, Record<SceneKey | 'generating', string>> = {
+  de: {
+    bondage: 'Gefesselt und kein Entkommen...',
+    blindfold: 'Nichts sehen, aber alles spüren...',
+    punishment: 'Jemand war ungezogen...',
+    tease: 'Geduld ist eine Tugend... oder?',
+    dare: 'Wahrheit oder Pflicht? Wähle weise.',
+    worship: 'Auf die Knie.',
+    leash: 'Braves Haustier.',
+    default: 'Spiel läuft.',
+    idle: 'Bereit wenn du es bist...',
+    generating: 'Deine Szene wird erstellt...',
+  },
+  en: {
+    bondage: 'Tied up and nowhere to go...',
+    blindfold: "Can't see, but can feel everything...",
+    punishment: "Someone's been naughty...",
+    tease: 'Patience is a virtue... right?',
+    dare: 'Truth or dare? Choose wisely.',
+    worship: 'On your knees.',
+    leash: 'Good pet.',
+    default: 'Game on.',
+    idle: 'Ready when you are...',
+    generating: 'Creating your scene...',
+  },
+};
+
+function getDialogue(scene: SceneKey, lang: string, title?: string): string {
   const d = title ? `"${title.length > 36 ? title.slice(0, 34) + '...' : title}"` : '';
-  switch (scene) {
-    case 'bondage': return d || 'Tied up and nowhere to go...';
-    case 'blindfold': return d || "Can't see, but can feel everything...";
-    case 'punishment': return d || "Someone's been naughty...";
-    case 'tease': return d || 'Patience is a virtue... right?';
-    case 'dare': return d || 'Truth or dare? Choose wisely.';
-    case 'worship': return d || 'On your knees.';
-    case 'leash': return d || 'Good pet.';
-    case 'default': return d || 'Game on.';
-    default: return 'Ready when you are...';
-  }
+  const dict = DIALOGUES[lang] || DIALOGUES.en;
+  return d || dict[scene] || dict.idle;
 }
 
 type Particle = { x: number; y: number; opacity: number; speed: number; size: number; drift: number };
@@ -79,6 +98,7 @@ type Props = {
 };
 
 export default function FoxDisplay({ isGenerating, game, heatLevel }: Props) {
+  const { language } = useLanguage();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const rafRef = useRef(0);
   const tRef = useRef(0);
@@ -92,7 +112,7 @@ export default function FoxDisplay({ isGenerating, game, heatLevel }: Props) {
   const scene = isGenerating ? 'idle' : detectScene(game);
   const foxKey = isGenerating ? 'default' : detectFoxImage(game);
   const foxSrc = FOX_IMAGES[foxKey];
-  const dialogue = isGenerating ? 'Creating your scene...' : getDialogue(scene, game?.title);
+  const dialogue = isGenerating ? getDialogue('generating' as SceneKey, language) : getDialogue(scene, language, game?.title);
 
   // Load fox image
   useEffect(() => {
