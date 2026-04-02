@@ -1,7 +1,11 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
 
-type FoxImageKey = 'blindfold' | 'bondage' | 'costume_police' | 'costume_teacher' | 'costume_stewardess' | 'sexy_fotos' | 'default';
+type FoxImageKey =
+  | 'blindfold' | 'bondage' | 'costume_police' | 'costume_teacher' | 'costume_stewardess' | 'sexy_fotos'
+  | 'dice_game' | 'worship' | 'leash' | 'massage' | 'interrogation' | 'tease_denial'
+  | 'card_game' | 'aftercare' | 'ice_play' | 'servant'
+  | 'default';
 
 const FOX_IMAGES: Record<FoxImageKey, string> = {
   blindfold: '/fox-assets/Game-Related/fox_bondage_2_blindfold.png',
@@ -10,6 +14,16 @@ const FOX_IMAGES: Record<FoxImageKey, string> = {
   costume_teacher: '/fox-assets/Game-Related/fox_costume_3_teacher.png',
   costume_stewardess: '/fox-assets/Game-Related/fox_costume_stewardess.png',
   sexy_fotos: '/fox-assets/Game-Related/fox_costume_4_sexy_fotos.png',
+  dice_game: '/fox-assets/Game-Related/fox_dice_game.png',
+  worship: '/fox-assets/Game-Related/fox_worship_kneel.png',
+  leash: '/fox-assets/Game-Related/fox_leash_petplay.png',
+  massage: '/fox-assets/Game-Related/fox_massage_sensory.png',
+  interrogation: '/fox-assets/Game-Related/fox_interrogation.png',
+  tease_denial: '/fox-assets/Game-Related/fox_tease_denial.png',
+  card_game: '/fox-assets/Game-Related/fox_card_game.png',
+  aftercare: '/fox-assets/Game-Related/fox_aftercare_cuddle.png',
+  ice_play: '/fox-assets/Game-Related/fox_ice_temperature.png',
+  servant: '/fox-assets/Game-Related/fox_servant_master.png',
   default: '/fox-assets/fox_normal_look.png',
 };
 
@@ -17,22 +31,48 @@ function detectFoxImage(game: any): FoxImageKey {
   if (!game) return 'default';
   const t = JSON.stringify(game).toLowerCase();
 
-  if (t.includes('blindfold') || t.includes('sensory') || t.includes('augenbinde') || t.includes('sinne'))
+  // Specific scenarios first (most specific matches)
+  if (t.includes('blindfold') || t.includes('augenbinde'))
     return 'blindfold';
+  if (t.includes('massage') || t.includes('sensory') || t.includes('sinne') || t.includes('candle') || t.includes('kerze') || t.includes('wax') || t.includes('wachs'))
+    return 'massage';
+  if (t.includes('ice') || t.includes('temperature') || t.includes('eis') || t.includes('temperatur') || t.includes('cold') || t.includes('kalt') || t.includes('hot') || t.includes('heiß'))
+    return 'ice_play';
+  if (t.includes('interrogat') || t.includes('detective') || t.includes('verhör') || t.includes('detektiv') || t.includes('spy') || t.includes('spion'))
+    return 'interrogation';
+  if (t.includes('maid') || t.includes('butler') || t.includes('servant') || t.includes('serve') || t.includes('dien') || t.includes('bedien') || t.includes('magd'))
+    return 'servant';
+  if (t.includes('cuddle') || t.includes('aftercare') || t.includes('kuschel') || t.includes('nachsorge') || t.includes('cozy') || t.includes('gemütlich'))
+    return 'aftercare';
+  if (t.includes('leash') || t.includes('collar') || t.includes('pet') || t.includes('leine') || t.includes('halsband') || t.includes('haustier'))
+    return 'leash';
+  if (t.includes('worship') || t.includes('kneel') || t.includes('knien') || t.includes('submit') || t.includes('unterwer') || t.includes('devotion') || t.includes('hingabe'))
+    return 'worship';
   if (t.includes('rope') || t.includes('tied') || t.includes('bond') || t.includes('restrain') || t.includes('cuff') || t.includes('shibari') || t.includes('fesseln') || t.includes('seil'))
     return 'bondage';
+  if (t.includes('dice') || t.includes('würfel') || t.includes('roll') || t.includes('board') || t.includes('brett'))
+    return 'dice_game';
+  if (t.includes('card') || t.includes('poker') || t.includes('karte') || t.includes('strip') || t.includes('bet') || t.includes('wette'))
+    return 'card_game';
+  if (t.includes('tease') || t.includes('denial') || t.includes('edge') || t.includes('feather') || t.includes('tickle') || t.includes('necken') || t.includes('feder') || t.includes('kitzel'))
+    return 'tease_denial';
   if (t.includes('police') || t.includes('officer') || t.includes('arrest') || t.includes('polizei') || t.includes('verhaft') || t.includes('punish') || t.includes('spank') || t.includes('bestraf'))
     return 'costume_police';
   if (t.includes('teacher') || t.includes('lesson') || t.includes('lehrer') || t.includes('unterricht') || t.includes('school') || t.includes('schul'))
     return 'costume_teacher';
   if (t.includes('stewardess') || t.includes('flight') || t.includes('pilot') || t.includes('flug') || t.includes('travel') || t.includes('reise'))
     return 'costume_stewardess';
-  if (t.includes('tease') || t.includes('photo') || t.includes('foto') || t.includes('strip') || t.includes('dare') || t.includes('truth') || t.includes('necken') || t.includes('wahrheit'))
+  if (t.includes('photo') || t.includes('foto') || t.includes('dare') || t.includes('truth') || t.includes('wahrheit') || t.includes('pflicht'))
     return 'sexy_fotos';
 
+  // Fallback: hash-based selection from all available images
   const hash = t.split('').reduce((a, c) => a + c.charCodeAt(0), 0);
-  const extras: FoxImageKey[] = ['costume_police', 'costume_teacher', 'costume_stewardess', 'sexy_fotos'];
-  return extras[hash % extras.length];
+  const allKeys: FoxImageKey[] = [
+    'costume_police', 'costume_teacher', 'costume_stewardess', 'sexy_fotos',
+    'dice_game', 'worship', 'leash', 'massage', 'interrogation', 'tease_denial',
+    'card_game', 'aftercare', 'ice_play', 'servant',
+  ];
+  return allKeys[hash % allKeys.length];
 }
 
 type Props = {

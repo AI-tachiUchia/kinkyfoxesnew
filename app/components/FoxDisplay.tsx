@@ -26,12 +26,19 @@ const CHAIN: [number, number][] = [
   [1,0],[2,0],[0,1],[3,1],[0,2],[1,2],[2,2],[3,2],[0,3],[3,3],[1,4],[2,4],
 ];
 
-type SceneKey = 'idle' | 'bondage' | 'blindfold' | 'punishment' | 'tease' | 'dare' | 'worship' | 'leash' | 'default';
+type SceneKey = 'idle' | 'bondage' | 'blindfold' | 'punishment' | 'tease' | 'dare' | 'worship' | 'leash' | 'massage' | 'dice' | 'cards' | 'interrogation' | 'aftercare' | 'ice' | 'servant' | 'default';
 
 function detectScene(game: any): SceneKey {
   if (!game) return 'idle';
   const t = JSON.stringify(game).toLowerCase();
-  if (t.includes('blindfold') || t.includes('sensory deprivation')) return 'blindfold';
+  if (t.includes('massage') || t.includes('candle') || t.includes('kerze') || t.includes('wax') || t.includes('wachs')) return 'massage';
+  if (t.includes('ice') || t.includes('temperatur') || t.includes('eis') || t.includes('kalt')) return 'ice';
+  if (t.includes('interrogat') || t.includes('detective') || t.includes('verhör') || t.includes('spy')) return 'interrogation';
+  if (t.includes('maid') || t.includes('butler') || t.includes('servant') || t.includes('dien') || t.includes('bedien')) return 'servant';
+  if (t.includes('cuddle') || t.includes('aftercare') || t.includes('kuschel') || t.includes('nachsorge')) return 'aftercare';
+  if (t.includes('dice') || t.includes('würfel') || t.includes('board') || t.includes('brett')) return 'dice';
+  if (t.includes('card') || t.includes('poker') || t.includes('karte') || t.includes('strip') || t.includes('bet') || t.includes('wette')) return 'cards';
+  if (t.includes('blindfold') || t.includes('sensory deprivation') || t.includes('augenbinde')) return 'blindfold';
   if (t.includes('tied') || t.includes('rope') || t.includes('restrain') || t.includes('bond') || t.includes('cuff') || t.includes('fesseln')) return 'bondage';
   if (t.includes('leash') || t.includes('collar') || t.includes('pet') || t.includes('leine') || t.includes('halsband')) return 'leash';
   if (t.includes('punish') || t.includes('spank') || t.includes('paddle') || t.includes('strafe') || t.includes('bestraf')) return 'punishment';
@@ -49,6 +56,11 @@ function getParticleConfig(scene: SceneKey): { shape: [number, number][]; color:
     case 'tease': return { shape: HEART, color: '#ef4444' };
     case 'dare': return { shape: STAR, color: '#c084fc' };
     case 'worship': case 'leash': return { shape: HEART, color: '#ec4899' };
+    case 'massage': case 'aftercare': return { shape: HEART, color: '#f9a8d4' };
+    case 'dice': case 'cards': return { shape: STAR, color: '#c084fc' };
+    case 'interrogation': return { shape: STAR, color: '#94a3b8' };
+    case 'ice': return { shape: STAR, color: '#38bdf8' };
+    case 'servant': return { shape: HEART, color: '#fbbf24' };
     default: return { shape: HEART, color: '#ef4444' };
   }
 }
@@ -62,6 +74,13 @@ const DIALOGUES: Record<string, Record<SceneKey | 'generating', string>> = {
     dare: 'Wahrheit oder Pflicht? Wähle weise.',
     worship: 'Auf die Knie.',
     leash: 'Braves Haustier.',
+    massage: 'Entspann dich... ich übernehme.',
+    dice: 'Lass die Würfel entscheiden...',
+    cards: 'Wer verliert, zieht aus.',
+    interrogation: 'Gesteh alles...',
+    aftercare: 'Komm her, ich halt dich fest.',
+    ice: 'Spürst du das? Heiß und kalt...',
+    servant: 'Zu Diensten, mein Herr.',
     default: 'Spiel läuft.',
     idle: 'Bereit wenn du es bist...',
     generating: 'Deine Szene wird erstellt...',
@@ -74,6 +93,13 @@ const DIALOGUES: Record<string, Record<SceneKey | 'generating', string>> = {
     dare: 'Truth or dare? Choose wisely.',
     worship: 'On your knees.',
     leash: 'Good pet.',
+    massage: 'Relax... I got you.',
+    dice: 'Let the dice decide...',
+    cards: 'Loser strips.',
+    interrogation: 'Confess everything...',
+    aftercare: 'Come here, I got you.',
+    ice: 'Feel that? Hot and cold...',
+    servant: 'At your service.',
     default: 'Game on.',
     idle: 'Ready when you are...',
     generating: 'Creating your scene...',
