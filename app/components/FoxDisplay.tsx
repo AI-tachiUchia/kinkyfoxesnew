@@ -26,7 +26,7 @@ const CHAIN: [number, number][] = [
   [1,0],[2,0],[0,1],[3,1],[0,2],[1,2],[2,2],[3,2],[0,3],[3,3],[1,4],[2,4],
 ];
 
-type SceneKey = 'idle' | 'bondage' | 'blindfold' | 'punishment' | 'tease' | 'dare' | 'worship' | 'leash' | 'massage' | 'dice' | 'cards' | 'interrogation' | 'aftercare' | 'ice' | 'servant' | 'default';
+type SceneKey = 'idle' | 'bondage' | 'blindfold' | 'punishment' | 'tease' | 'dare' | 'worship' | 'leash' | 'massage' | 'dice' | 'cards' | 'interrogation' | 'aftercare' | 'ice' | 'servant' | 'nurse' | 'pirate' | 'selfie' | 'yoga' | 'chef' | 'vampire' | 'dance' | 'whisper' | 'throne' | 'pillow_fight' | 'default';
 
 function detectScene(game: any): SceneKey {
   if (!game) return 'idle';
@@ -45,6 +45,16 @@ function detectScene(game: any): SceneKey {
   if (t.includes('tease') || t.includes('denial') || t.includes('edge') || t.includes('necken')) return 'tease';
   if (t.includes('truth') || t.includes('dare') || t.includes('wahrheit') || t.includes('pflicht')) return 'dare';
   if (t.includes('worship') || t.includes('kneel') || t.includes('submit') || t.includes('knien') || t.includes('gehorchen')) return 'worship';
+  if (t.includes('nurse') || t.includes('doctor') || t.includes('medical') || t.includes('arzt') || t.includes('krankenschwester')) return 'nurse';
+  if (t.includes('pirate') || t.includes('captain') || t.includes('pirat') || t.includes('kapitän')) return 'pirate';
+  if (t.includes('selfie') || t.includes('photo') || t.includes('foto') || t.includes('camera')) return 'selfie';
+  if (t.includes('yoga') || t.includes('stretch') || t.includes('dehn') || t.includes('exercise')) return 'yoga';
+  if (t.includes('cook') || t.includes('chef') || t.includes('kitchen') || t.includes('koch') || t.includes('küche')) return 'chef';
+  if (t.includes('vampire') || t.includes('vampir') || t.includes('gothic') || t.includes('halloween')) return 'vampire';
+  if (t.includes('dance') || t.includes('tango') || t.includes('waltz') || t.includes('tanz')) return 'dance';
+  if (t.includes('whisper') || t.includes('secret') || t.includes('flüster') || t.includes('geheimnis') || t.includes('confess')) return 'whisper';
+  if (t.includes('throne') || t.includes('king') || t.includes('queen') || t.includes('royal') || t.includes('könig') || t.includes('krone')) return 'throne';
+  if (t.includes('pillow') || t.includes('kissen') || t.includes('pajama') || t.includes('pyjama') || t.includes('sleepover')) return 'pillow_fight';
   return 'default';
 }
 
@@ -61,6 +71,16 @@ function getParticleConfig(scene: SceneKey): { shape: [number, number][]; color:
     case 'interrogation': return { shape: STAR, color: '#94a3b8' };
     case 'ice': return { shape: STAR, color: '#38bdf8' };
     case 'servant': return { shape: HEART, color: '#fbbf24' };
+    case 'nurse': return { shape: HEART, color: '#f9a8d4' };
+    case 'pirate': return { shape: STAR, color: '#fbbf24' };
+    case 'selfie': return { shape: STAR, color: '#c084fc' };
+    case 'yoga': return { shape: STAR, color: '#86efac' };
+    case 'chef': return { shape: HEART, color: '#f87171' };
+    case 'vampire': return { shape: FLAME, color: '#7c3aed' };
+    case 'dance': return { shape: HEART, color: '#ec4899' };
+    case 'whisper': return { shape: HEART, color: '#f9a8d4' };
+    case 'throne': return { shape: STAR, color: '#fbbf24' };
+    case 'pillow_fight': return { shape: STAR, color: '#e2e8f0' };
     default: return { shape: HEART, color: '#ef4444' };
   }
 }
@@ -81,6 +101,16 @@ const DIALOGUES: Record<string, Record<SceneKey | 'generating', string>> = {
     aftercare: 'Komm her, ich halt dich fest.',
     ice: 'Spürst du das? Heiß und kalt...',
     servant: 'Zu Diensten, mein Herr.',
+    nurse: 'Der Doktor sieht dich jetzt...',
+    pirate: 'Arrr, Beute gefunden!',
+    selfie: 'Sag Cheese... oder Foxie!',
+    yoga: 'Atme tief ein...',
+    chef: 'Das Geheimrezept? Liebe.',
+    vampire: 'Zeig mir deinen Hals...',
+    dance: 'Darf ich bitten?',
+    whisper: 'Psst... komm näher.',
+    throne: 'Verneige dich vor mir.',
+    pillow_fight: 'Kissenschlacht!',
     default: 'Spiel läuft.',
     idle: 'Bereit wenn du es bist...',
     generating: 'Deine Szene wird erstellt...',
@@ -100,6 +130,16 @@ const DIALOGUES: Record<string, Record<SceneKey | 'generating', string>> = {
     aftercare: 'Come here, I got you.',
     ice: 'Feel that? Hot and cold...',
     servant: 'At your service.',
+    nurse: 'The doctor will see you now...',
+    pirate: 'Arrr, treasure found!',
+    selfie: 'Say cheese... or foxie!',
+    yoga: 'Breathe in deeply...',
+    chef: 'The secret ingredient? Love.',
+    vampire: 'Show me your neck...',
+    dance: 'May I have this dance?',
+    whisper: 'Psst... come closer.',
+    throne: 'Bow before me.',
+    pillow_fight: 'Pillow fight!',
     default: 'Game on.',
     idle: 'Ready when you are...',
     generating: 'Creating your scene...',

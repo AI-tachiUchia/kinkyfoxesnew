@@ -5,6 +5,7 @@ type FoxImageKey =
   | 'blindfold' | 'bondage' | 'costume_police' | 'costume_teacher' | 'costume_stewardess' | 'sexy_fotos'
   | 'dice_game' | 'worship' | 'leash' | 'massage' | 'interrogation' | 'tease_denial'
   | 'card_game' | 'aftercare' | 'ice_play' | 'servant'
+  | 'nurse' | 'pirate' | 'selfie' | 'yoga' | 'chef' | 'vampire' | 'dance' | 'whisper' | 'throne' | 'pillow_fight'
   | 'default';
 
 const FOX_IMAGES: Record<FoxImageKey, string> = {
@@ -24,6 +25,16 @@ const FOX_IMAGES: Record<FoxImageKey, string> = {
   aftercare: '/fox-assets/Game-Related/fox_aftercare_cuddle.png',
   ice_play: '/fox-assets/Game-Related/fox_ice_temperature.png',
   servant: '/fox-assets/Game-Related/fox_servant_master.png',
+  nurse: '/fox-assets/Game-Related/fox_nurse_patient.png',
+  pirate: '/fox-assets/Game-Related/fox_pirate_captive.png',
+  selfie: '/fox-assets/Game-Related/fox_mirror_selfie.png',
+  yoga: '/fox-assets/Game-Related/fox_yoga_stretch.png',
+  chef: '/fox-assets/Game-Related/fox_chef_cooking.png',
+  vampire: '/fox-assets/Game-Related/fox_vampire_bite.png',
+  dance: '/fox-assets/Game-Related/fox_dance_tango.png',
+  whisper: '/fox-assets/Game-Related/fox_whisper_secret.png',
+  throne: '/fox-assets/Game-Related/fox_throne_royal.png',
+  pillow_fight: '/fox-assets/Game-Related/fox_pillow_fight.png',
   default: '/fox-assets/fox_normal_look.png',
 };
 
@@ -62,7 +73,27 @@ function detectFoxImage(game: any): FoxImageKey {
     return 'costume_teacher';
   if (t.includes('stewardess') || t.includes('flight') || t.includes('pilot') || t.includes('flug') || t.includes('travel') || t.includes('reise'))
     return 'costume_stewardess';
-  if (t.includes('photo') || t.includes('foto') || t.includes('dare') || t.includes('truth') || t.includes('wahrheit') || t.includes('pflicht'))
+  if (t.includes('nurse') || t.includes('doctor') || t.includes('medical') || t.includes('krankenschwester') || t.includes('arzt') || t.includes('medizin'))
+    return 'nurse';
+  if (t.includes('pirate') || t.includes('captain') || t.includes('pirat') || t.includes('kapitän') || t.includes('treasure') || t.includes('schatz'))
+    return 'pirate';
+  if (t.includes('photo') || t.includes('selfie') || t.includes('foto') || t.includes('camera') || t.includes('kamera') || t.includes('pose'))
+    return 'selfie';
+  if (t.includes('yoga') || t.includes('stretch') || t.includes('flexib') || t.includes('dehn') || t.includes('exercise') || t.includes('übung'))
+    return 'yoga';
+  if (t.includes('cook') || t.includes('chef') || t.includes('kitchen') || t.includes('koch') || t.includes('küche') || t.includes('food') || t.includes('essen'))
+    return 'chef';
+  if (t.includes('vampire') || t.includes('vampir') || t.includes('bite') || t.includes('gothic') || t.includes('halloween') || t.includes('biss') || t.includes('dracula'))
+    return 'vampire';
+  if (t.includes('dance') || t.includes('tango') || t.includes('waltz') || t.includes('tanz') || t.includes('walzer') || t.includes('ball'))
+    return 'dance';
+  if (t.includes('whisper') || t.includes('secret') || t.includes('flüster') || t.includes('geheimnis') || t.includes('confess') || t.includes('geständnis'))
+    return 'whisper';
+  if (t.includes('throne') || t.includes('king') || t.includes('queen') || t.includes('royal') || t.includes('thron') || t.includes('könig') || t.includes('königin') || t.includes('crown') || t.includes('krone'))
+    return 'throne';
+  if (t.includes('pillow') || t.includes('kissen') || t.includes('pajama') || t.includes('pyjama') || t.includes('sleepover') || t.includes('slumber'))
+    return 'pillow_fight';
+  if (t.includes('dare') || t.includes('truth') || t.includes('wahrheit') || t.includes('pflicht'))
     return 'sexy_fotos';
 
   // Fallback: hash-based selection from all available images
@@ -71,6 +102,7 @@ function detectFoxImage(game: any): FoxImageKey {
     'costume_police', 'costume_teacher', 'costume_stewardess', 'sexy_fotos',
     'dice_game', 'worship', 'leash', 'massage', 'interrogation', 'tease_denial',
     'card_game', 'aftercare', 'ice_play', 'servant',
+    'nurse', 'pirate', 'selfie', 'yoga', 'chef', 'vampire', 'dance', 'whisper', 'throne', 'pillow_fight',
   ];
   return allKeys[hash % allKeys.length];
 }
