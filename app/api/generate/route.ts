@@ -1,5 +1,14 @@
 import { GoogleGenAI, HarmCategory, HarmBlockThreshold } from "@google/genai";
 import { NextResponse } from "next/server";
+import * as fs from "fs";
+import * as path from "path";
+
+// On Vercel, write the service account key from env var to /tmp so ADC can find it
+if (process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON && !process.env.GOOGLE_APPLICATION_CREDENTIALS) {
+  const keyPath = path.join("/tmp", "gcp-key.json");
+  fs.writeFileSync(keyPath, process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON);
+  process.env.GOOGLE_APPLICATION_CREDENTIALS = keyPath;
+}
 
 const SYSTEM_PROMPT = `You are an expert designer of intimate partner games for couples. You draw from a deep toolkit of game mechanics to create experiences that are genuinely playable, surprising, and hot.
 
