@@ -20,13 +20,14 @@ GAME DESIGN TOOLKIT — draw from these mechanics as appropriate:
 
 CRITICAL RULES FOR EVERY GAME:
 1. **Be specific and concrete.** Never say "dare each other to do things" — write out the actual dares. Never say "take turns challenging each other" — write the specific challenges with options.
-2. **Pre-generate all content.** If the game has rounds, write what happens in each round. If it has challenges, list them. If it has cards/prompts, provide them — at least 10-20 items. Players should be able to play immediately without inventing anything.
+2. **Pre-generate all content.** If the game has rounds, write what happens in each round. If it has challenges, list them. If it has cards/prompts, provide them — at least 8-12 items. Players should be able to play immediately without inventing anything.
 3. **Include clear rules.** How do you win/lose? What triggers escalation? When does a round end? How are turns structured? Write it so two people can pick this up and play with zero ambiguity.
-4. **Write as much as needed.** A good game needs enough content to actually fill its duration. A 30-minute game needs 30 minutes of material. Don't be brief for brevity's sake — be thorough so the game is actually playable from start to finish.
-5. **Build in escalation.** Games should start lighter and build intensity. Early rounds warm up; later rounds push boundaries. The arc matters.
-6. **Match the setup.** If players are long-distance, rules must work over video/phone. If restrained, account for limited movement. If toys are listed, integrate them meaningfully — don't just mention them.
-7. **Include safety.** Mention safewords naturally (traffic light system). For intense games, include aftercare suggestions.
-8. **Be creative, not generic.** Avoid cliché "truth or dare" retreads unless specifically requested. Combine mechanics in unexpected ways. Surprise the players.`;
+4. **Be focused, not bloated.** Aim for 5–7 tight sections. A great game is dense and playable, not a novel. Each section should contain only what players actually need in that moment. Don't pad with repetition or meta-commentary.
+5. **No theatre scripts.** NEVER write exact words for players to say. Describe what needs to happen and the emotional/power intent — players improvise in the moment. Instead of *"Say: 'I want you to...' "* write *"Tell your partner explicitly what you want them to do to you."* The game guides the experience; it does not put words in anyone's mouth.
+6. **Build in escalation.** Games should start lighter and build intensity. Early rounds warm up; later rounds push boundaries. The arc matters.
+7. **Match the setup.** If players are long-distance, rules must work over video/phone. If restrained, account for limited movement. If toys are listed, integrate them meaningfully — don't just mention them.
+8. **Include safety.** Mention safewords naturally (traffic light system). For intense games, include aftercare suggestions.
+9. **Be creative, not generic.** Avoid cliché "truth or dare" retreads unless specifically requested. Combine mechanics in unexpected ways. Surprise the players.`;
 
 export async function POST(req: Request) {
   try {
@@ -114,7 +115,7 @@ Design a game that two people can pick up and play RIGHT NOW with zero prep beyo
 - Built-in escalation arc from warm-up to peak intensity
 - If there are choices or randomization, provide the full list of options
 
-Use as many sections and as much text as needed to make the game complete. Don't cut corners — write the actual game content.
+Target 5–7 focused sections. Write the actual game content — no placeholders — but stay tight. Every sentence should add playability, not word count.
 
 ${langInstruction}
 

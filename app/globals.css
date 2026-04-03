@@ -177,6 +177,58 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 
+/* Heat level slider — gradient track */
+.heat-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 6px;
+  border-radius: 3px;
+  outline: none;
+  cursor: pointer;
+  background: linear-gradient(to right,
+    #60a5fa 0%,
+    #a78bfa 25%,
+    #d97757 50%,
+    #ef4444 75%,
+    #dc2626 100%
+  );
+}
+.heat-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  cursor: pointer;
+  background: #1e2126;
+  border: 2px solid var(--heat-color, #d97757);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.5), 0 0 8px var(--heat-color, #d97757);
+  transition: transform 0.1s, box-shadow 0.2s;
+}
+.heat-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.25);
+}
+.heat-slider::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  cursor: pointer;
+  background: #1e2126;
+  border: 2px solid var(--heat-color, #d97757);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+}
+.heat-slider::-moz-range-track {
+  height: 6px;
+  border-radius: 3px;
+  background: linear-gradient(to right,
+    #60a5fa 0%,
+    #a78bfa 25%,
+    #d97757 50%,
+    #ef4444 75%,
+    #dc2626 100%
+  );
+}
+
 /* Select dropdown styling */
 select {
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23d97757' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
