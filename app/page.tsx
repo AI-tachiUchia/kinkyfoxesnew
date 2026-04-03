@@ -7,7 +7,7 @@ import { supabase } from "../lib/supabase";
 import { useLanguage } from "./context/LanguageContext";
 import { translations } from "../lib/translations";
 import FoxDisplay from "./components/FoxDisplay";
-import FoxImage from "./components/FoxImage";
+import FoxImage, { detectFoxImage, FOX_IMAGES } from "./components/FoxImage";
 import FoxLoadingVideo from "./components/FoxLoadingVideo";
 
 function Auth() {
@@ -1020,7 +1020,17 @@ function HomeContent({ session }: { session: any }) {
                             </button>
                             {isOpen && (
                               <div className="px-5 pb-5 border-t border-white/[0.04]">
-                                <div className="pt-4">
+                                <div className="pt-4 relative">
+                                  {(() => {
+                                    const sectionKey = detectFoxImage({ title: section.title, content: section.content });
+                                    return sectionKey !== 'default' ? (
+                                      <img
+                                        src={FOX_IMAGES[sectionKey]}
+                                        alt=""
+                                        className="float-right ml-3 mb-2 w-20 h-20 object-contain opacity-80 drop-shadow-md"
+                                      />
+                                    ) : null;
+                                  })()}
                                   <ReactMarkdown components={markdownComponents}>{section.content}</ReactMarkdown>
                                 </div>
                               </div>

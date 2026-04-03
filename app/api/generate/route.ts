@@ -1,4 +1,4 @@
-import Anthropic from "@anthropic-ai/sdk";
+import { GoogleGenAI } from "@google/genai";
 import { NextResponse } from "next/server";
 
 const SYSTEM_PROMPT = `You are an expert designer of intimate partner games for couples. You draw from a deep toolkit of game mechanics to create experiences that are genuinely playable, surprising, and hot.
@@ -46,12 +46,22 @@ export async function POST(req: Request) {
       ? "IMPORTANT: Generate the ENTIRE game (all titles, durations, and content) strictly in GERMAN language."
       : "IMPORTANT: Generate the ENTIRE game (all titles, durations, and content) strictly in ENGLISH language.";
 
-    const apiKey = process.env.ANTHROPIC_API_KEY;
-    if (!apiKey) {
-      return NextResponse.json({ error: "Missing API key" }, { status: 500 });
+    if (!process.env.GOOGLE_CLOUD_PROJECT) {
+      return NextResponse.json({ error: "Missing GOOGLE_CLOUD_PROJECT" }, { status: 500 });
     }
 
-    const client = new Anthropic({ apiKey });
+    const ai = new GoogleGenAI({
+      vertexai: true,
+      project: process.env.GOOGLE_CLOUD_PROJECT,
+      location: process.env.GOOGLE_CLOUD_LOCATION || "us-central1",
+    });
+
+    const safetySettings = [
+      { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_NONE" },
+      { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_NONE" },
+      { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_NONE" },
+      { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_NONE" },
+    ];
 
     let prompt = "";
 
@@ -129,14 +139,17 @@ Output ONLY a JSON object:
 }`;
     }
 
-    const message = await client.messages.create({
-      model: "claude-haiku-4-5-20251001",
-      max_tokens: 4096,
-      system: SYSTEM_PROMPT,
-      messages: [{ role: "user", content: prompt }],
+    const response = await ai.models.generateContent({
+      model: "gemini-3-flash-preview",
+      contents: [{ role: "user", parts: [{ text: prompt }] }],
+      config: {
+        systemInstruction: SYSTEM_PROMPT,
+        maxOutputTokens: 4096,
+        safetySettings,
+      },
     });
 
-    const text = (message.content[0] as any).text;
+    const text = response.text ?? "";
 
     // Strip markdown fences, then find the JSON object
     const stripped = text.replace(/^```(?:json)?\s*/m, '').replace(/```\s*$/m, '').trim();
