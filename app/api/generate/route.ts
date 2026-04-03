@@ -1,14 +1,5 @@
-import { GoogleGenAI, HarmCategory, HarmBlockThreshold } from "@google/genai";
+import Anthropic from "@anthropic-ai/sdk";
 import { NextResponse } from "next/server";
-import * as fs from "fs";
-import * as path from "path";
-
-// On Vercel, write the service account key from env var to /tmp so ADC can find it
-if (process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON && !process.env.GOOGLE_APPLICATION_CREDENTIALS) {
-  const keyPath = path.join("/tmp", "gcp-key.json");
-  fs.writeFileSync(keyPath, process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON);
-  process.env.GOOGLE_APPLICATION_CREDENTIALS = keyPath;
-}
 
 const SYSTEM_PROMPT = `You are an expert designer of intimate partner games for couples. You draw from a deep toolkit of game mechanics to create experiences that are genuinely playable, surprising, and hot.
 
@@ -30,13 +21,14 @@ GAME DESIGN TOOLKIT — draw from these mechanics as appropriate:
 CRITICAL RULES FOR EVERY GAME:
 1. **Be specific and concrete.** Never say "dare each other to do things" — write out the actual dares. Never say "take turns challenging each other" — write the specific challenges with options.
 2. **Pre-generate all content.** If the game has rounds, write what happens in each round. If it has challenges, list them. If it has cards/prompts, provide them — at least 8-12 items. Players should be able to play immediately without inventing anything.
-3. **Include clear rules.** How do you win/lose? What triggers escalation? When does a round end? How are turns structured? Write it so two people can pick this up and play with zero ambiguity.
-4. **Be focused, not bloated.** Aim for 5–7 tight sections. A great game is dense and playable, not a novel. Each section should contain only what players actually need in that moment. Don't pad with repetition or meta-commentary.
-5. **No theatre scripts.** NEVER write exact words for players to say. Describe what needs to happen and the emotional/power intent — players improvise in the moment. Instead of *"Say: 'I want you to...' "* write *"Tell your partner explicitly what you want them to do to you."* The game guides the experience; it does not put words in anyone's mouth.
-6. **Build in escalation.** Games should start lighter and build intensity. Early rounds warm up; later rounds push boundaries. The arc matters.
-7. **Match the setup.** If players are long-distance, rules must work over video/phone. If restrained, account for limited movement. If toys are listed, integrate them meaningfully — don't just mention them.
-8. **Include safety.** Mention safewords naturally (traffic light system). For intense games, include aftercare suggestions.
-9. **Be creative, not generic.** Avoid cliché "truth or dare" retreads unless specifically requested. Combine mechanics in unexpected ways. Surprise the players.`;
+3. **NEVER announce phases/rounds you don't fully write.** If you say the game has 4 phases, you MUST write out ALL 4 phases completely. If you list a round by name, you MUST fully describe it. NEVER use placeholder text like "(continue similarly for rounds 3 and 4)" or "repeat for remaining phases" or "etc." Every announced element must be fully written. If you cannot fit it, reduce the number of phases/rounds — but always deliver 100% of what you announce.
+4. **Include clear rules.** How do you win/lose? What triggers escalation? When does a round end? How are turns structured? Write it so two people can pick this up and play with zero ambiguity.
+5. **Be focused, not bloated.** Aim for 5–7 tight sections. A great game is dense and playable, not a novel. Each section should contain only what players actually need in that moment. Don't pad with repetition or meta-commentary.
+6. **No theatre scripts.** NEVER write exact words for players to say. Describe what needs to happen and the emotional/power intent — players improvise in the moment. Instead of *"Say: 'I want you to...' "* write *"Tell your partner explicitly what you want them to do to you."* The game guides the experience; it does not put words in anyone's mouth.
+7. **Build in escalation.** Games should start lighter and build intensity. Early rounds warm up; later rounds push boundaries. The arc matters.
+8. **Match the setup.** If players are long-distance, rules must work over video/phone. If restrained, account for limited movement. If toys are listed, integrate them meaningfully — don't just mention them.
+9. **Include safety.** Mention safewords naturally (traffic light system). For intense games, include aftercare suggestions.
+10. **Be creative, not generic.** Avoid cliché "truth or dare" retreads unless specifically requested. Combine mechanics in unexpected ways. Surprise the players.`;
 
 export async function POST(req: Request) {
   try {
@@ -55,22 +47,11 @@ export async function POST(req: Request) {
       ? "IMPORTANT: Generate the ENTIRE game (all titles, durations, and content) strictly in GERMAN language."
       : "IMPORTANT: Generate the ENTIRE game (all titles, durations, and content) strictly in ENGLISH language.";
 
-    if (!process.env.GOOGLE_CLOUD_PROJECT) {
-      return NextResponse.json({ error: "Missing GOOGLE_CLOUD_PROJECT" }, { status: 500 });
+    if (!process.env.ANTHROPIC_API_KEY) {
+      return NextResponse.json({ error: "Missing ANTHROPIC_API_KEY" }, { status: 500 });
     }
 
-    const ai = new GoogleGenAI({
-      vertexai: true,
-      project: process.env.GOOGLE_CLOUD_PROJECT,
-      location: process.env.GOOGLE_CLOUD_LOCATION || "us-central1",
-    });
-
-    const safetySettings = [
-      { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: HarmBlockThreshold.BLOCK_NONE },
-      { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_NONE },
-      { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_NONE },
-      { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_NONE },
-    ];
+    const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
     let prompt = "";
 
@@ -148,17 +129,14 @@ Output ONLY a JSON object:
 }`;
     }
 
-    const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
-      contents: [{ role: "user", parts: [{ text: prompt }] }],
-      config: {
-        systemInstruction: SYSTEM_PROMPT,
-        maxOutputTokens: 4096,
-        safetySettings,
-      },
+    const response = await anthropic.messages.create({
+      model: "claude-sonnet-4-6",
+      max_tokens: 8192,
+      system: SYSTEM_PROMPT,
+      messages: [{ role: "user", content: prompt }],
     });
 
-    const text = response.text ?? "";
+    const text = response.content[0].type === "text" ? response.content[0].text : "";
 
     // Strip markdown fences, then find the JSON object
     const stripped = text.replace(/^```(?:json)?\s*/m, '').replace(/```\s*$/m, '').trim();
