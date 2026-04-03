@@ -35,38 +35,40 @@ OUT_DIR = PROJECT_ROOT / "public" / "fox-assets" / "Game-Related"
 
 CHECKPOINT = "ponyDiffusionV6XL.safetensors"
 
-# Pony Diffusion quality tags + illustrated style to match existing Gemini cards
-QUALITY = "score_9, score_8_up, score_7_up, source_anime"
+# Pony Diffusion quality tags + chibi style reverse-engineered from existing Gemini cards
+QUALITY = "score_9, score_8_up, best quality, masterpiece"
 NEGATIVE = (
-    "score_4, score_3, score_2, score_1, worst quality, low quality, blurry, "
-    "watermark, text, signature, jpeg artifacts, 3d, photo, realistic, "
-    "human, child, young, deformed, pixel art, retro, 8-bit, 16-bit, "
-    "chibi, baby, toddler, scenery, landscape, multiple views"
+    "low quality, bad anatomy, disfigured, mutated, ugly, blurry, out of focus, "
+    "realistic, photorealistic, 3D, text, signature, watermark, "
+    "extra limbs, missing limbs, poorly drawn, monochrome, grayscale, "
+    "complex background, busy background, distorted, "
+    "long limbs, small head, disproportionate, tall body, adult proportions, "
+    "multiple views, character sheet, turnaround, reference sheet, "
+    "score_4, score_3, score_2, score_1"
 )
 
 STYLE_PREFIX = (
     f"{QUALITY}, "
-    "anthro fox girl, female anthropomorphic fox, adult body, "
-    "slender curvy feminine figure, big expressive eyes, "
-    "soft shading, warm color palette, semi-realistic fur texture, "
-    "orange fur, white chest fur, fluffy tail, fox ears, "
-    "plain solid light beige background, simple clean background, "
-    "full body, single character, digital illustration, anime style"
+    "solo, 1girl, single character, "
+    "chibi, chibi proportions, very large head, small body, "
+    "head to body ratio 1:1, short limbs, stubby arms, stubby legs, "
+    "anthro, female fox, orange fur, white muzzle, white chest fur, "
+    "fluffy tail, pointed ears, pink inner ear, big expressive eyes, brown eyes, "
+    "clean pixel lines, crisp outlines, vibrant colors, warm colors, soft shading, "
+    "simple background, white background, full body"
 )
 
-# The 4 scenes that Gemini blocked — now as illustrated style
+# The 4 scenes that Gemini blocked — chibi style with fetish outfits
 SCENARIOS = [
     {
         "key": "heavy_bondage",
         "filename": "fox_pixel_heavy_bondage.png",
         "prompt": (
             f"{STYLE_PREFIX}, "
-            "elaborate decorative red rope outfit, japanese shibari kinbaku rope art, "
-            "decorative knots and patterns across torso and thighs, "
-            "kneeling gracefully, arms behind back, "
-            "expression of deep trust and surrender, closed eyes, peaceful smile, "
-            "flushed cheeks, pink blush, red rope with artistic knot patterns, "
-            "intimate tender mood"
+            "wearing red shibari rope harness, decorative rope knots across chest and waist, "
+            "black leather corset underneath, thigh-high black stockings, "
+            "kneeling, arms behind back, "
+            "blushing, closed eyes, peaceful happy smile"
         ),
     },
     {
@@ -74,11 +76,10 @@ SCENARIOS = [
         "filename": "fox_pixel_suspension.png",
         "prompt": (
             f"{STYLE_PREFIX}, "
-            "artistic aerial suspension pose, hanging gracefully from ropes above, "
-            "body wrapped in flowing silk ribbons and decorative ropes, "
-            "dynamic floating pose with arms extended upward, "
-            "serene trusting expression, eyes half-closed, gentle smile, pink blush, "
-            "ethereal graceful atmosphere, elegant and artistic"
+            "wearing black leather harness with buckles and rings, "
+            "suspended from ropes above, hanging in the air, "
+            "arms spread out, legs dangling, "
+            "happy expression, eyes half-closed, pink blush"
         ),
     },
     {
@@ -86,12 +87,10 @@ SCENARIOS = [
         "filename": "fox_pixel_collar_crawl.png",
         "prompt": (
             f"{STYLE_PREFIX}, "
-            "wearing fashionable black leather choker collar with silver bell charm, "
-            "matching leather wrist cuffs, "
-            "on all fours in a graceful crawling pose, "
-            "looking up with devoted adoring eyes, deep blush, "
-            "happy eager expression, tongue out playfully, "
-            "ribbon leash trailing from collar, cute pet play devotion theme"
+            "wearing black leather collar with silver bell, "
+            "matching leather wrist cuffs, black lace lingerie, garter straps, "
+            "on all fours, crawling pose, looking up at viewer, "
+            "blushing, adoring eyes, tongue out, leash trailing from collar"
         ),
     },
     {
@@ -99,11 +98,11 @@ SCENARIOS = [
         "filename": "fox_pixel_wax_play.png",
         "prompt": (
             f"{STYLE_PREFIX}, "
-            "lying back reclining, arms above head, wearing silk camisole, "
-            "decorative red and black candle wax drip patterns on chest and stomach, "
-            "like artistic body paint, abstract drip art, "
-            "eyes shut tight, biting lip, deep blush, intense sensation expression, "
-            "scattered lit candles nearby, warm candlelight glow, intimate mood"
+            "wearing black silk negligee, "
+            "red candle wax drips on shoulders and chest, "
+            "holding a lit red candle in one hand, "
+            "sitting, legs tucked, "
+            "eyes shut tight, biting lip, deep blush, warm candlelight"
         ),
     },
 ]
@@ -121,10 +120,10 @@ def build_workflow(positive_prompt, negative_prompt, seed, filename_prefix):
         "5": {
             "class_type": "EmptyLatentImage",
             "inputs": {
-                    # SDXL native res — 832x1216 portrait for single character
+                    # Square for chibi characters
                 "batch_size": 1,
-                "height": 1216,
-                "width": 832,
+                "height": 1024,
+                "width": 1024,
             },
         },
         "6": {
