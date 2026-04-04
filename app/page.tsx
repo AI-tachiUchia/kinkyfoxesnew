@@ -138,11 +138,11 @@ function HomeContent({ session }: { session: any }) {
     setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 4000);
   };
 
-  const stateRef = useRef({ distance, customDistance, toys, vibe, template, game, isGenerating, isComplicating, isRefining, savedToys });
+  const stateRef = useRef({ distance, customDistance, toys, vibe, template, game, isGenerating, isComplicating, isRefining, savedToys, heatLevel });
   const toysInputRef = useRef<HTMLInputElement>(null);
   useEffect(() => {
-    stateRef.current = { distance, customDistance, toys, vibe, template, game, isGenerating, isComplicating, isRefining, savedToys };
-  }, [distance, customDistance, toys, vibe, template, game, isGenerating, isComplicating, isRefining, savedToys]);
+    stateRef.current = { distance, customDistance, toys, vibe, template, game, isGenerating, isComplicating, isRefining, savedToys, heatLevel };
+  }, [distance, customDistance, toys, vibe, template, game, isGenerating, isComplicating, isRefining, savedToys, heatLevel]);
 
   // Initialize Room ID
   useEffect(() => {
@@ -169,6 +169,7 @@ function HomeContent({ session }: { session: any }) {
         if (payload.isGenerating !== undefined) setIsGenerating(payload.isGenerating);
         if (payload.isComplicating !== undefined) setIsComplicating(payload.isComplicating);
         if (payload.isRefining !== undefined) setIsRefining(payload.isRefining);
+        if (payload.heatLevel !== undefined) setHeatLevel(payload.heatLevel);
       })
       .on('broadcast', { event: 'toybox-sync' }, ({ payload }) => {
         if (payload.toys) setPartnerToys(payload.toys);
@@ -264,7 +265,7 @@ function HomeContent({ session }: { session: any }) {
   const handleCopyLink = () => {
     if (typeof window !== "undefined") {
       navigator.clipboard.writeText(window.location.href);
-      alert("Partner link copied to clipboard!");
+      addToast("Partner link copied to clipboard!");
     }
   };
 
@@ -429,7 +430,7 @@ function HomeContent({ session }: { session: any }) {
       broadcastState({ game: data, isGenerating: false });
     } catch (error) {
       console.error(error);
-      alert('Error generating surprise game.');
+      addToast('Error generating surprise game.');
       setIsGenerating(false);
       setIsSurprising(false);
       transitionTo('setup');
@@ -493,7 +494,7 @@ function HomeContent({ session }: { session: any }) {
       broadcastState({ game: data, isGenerating: false });
     } catch (error) {
       console.error(error);
-      alert('Error generating game. Please check the console.');
+      addToast('Error generating game. Please check the console.');
       setIsGenerating(false);
       transitionTo('setup');
       broadcastState({ isGenerating: false });
@@ -523,7 +524,7 @@ function HomeContent({ session }: { session: any }) {
       broadcastState({ game: data, isComplicating: false });
     } catch (error) {
       console.error(error);
-      alert('Error complicating game.');
+      addToast('Error complicating game.');
       broadcastState({ isComplicating: false });
     } finally {
       setIsComplicating(false);
@@ -556,7 +557,7 @@ function HomeContent({ session }: { session: any }) {
       broadcastState({ game: data, isRefining: false });
     } catch (error) {
       console.error(error);
-      alert('Error refining game.');
+      addToast('Error refining game.');
       broadcastState({ isRefining: false });
     } finally {
       setIsRefining(false);
@@ -625,10 +626,10 @@ function HomeContent({ session }: { session: any }) {
           broadcastState({ game: importedGame });
           transitionTo('game');
         } else {
-          alert('Invalid game file format.');
+          addToast('Invalid game file format.');
         }
       } catch (error) {
-        alert('Error parsing JSON file.');
+        addToast('Error parsing JSON file.');
       }
     };
     reader.readAsText(file);
@@ -858,7 +859,7 @@ function HomeContent({ session }: { session: any }) {
                   </button>
                 </div>
                 <input type="range" min={1} max={5} value={heatLevel}
-                  onChange={e => setHeatLevel(Number(e.target.value))}
+                  onChange={e => { const v = Number(e.target.value); setHeatLevel(v); broadcastState({ heatLevel: v }); }}
                   className="heat-slider w-full"
                   style={{ '--heat-color': heatColor } as React.CSSProperties} />
                 <div className="flex justify-between text-[10px] tracking-wide px-0.5 -mt-0.5">
