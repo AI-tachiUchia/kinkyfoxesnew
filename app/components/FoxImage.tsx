@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef } from 'react';
 
 type FoxImageKey =
-  | 'blindfold' | 'bondage' | 'costume_police' | 'costume_teacher' | 'costume_stewardess' | 'sexy_fotos'
+  | 'blindfold' | 'bondage' | 'bdsm_outfit' | 'costume_police' | 'costume_teacher' | 'costume_stewardess' | 'sexy_fotos'
   | 'dice_game' | 'worship' | 'leash' | 'massage' | 'interrogation' | 'tease_denial'
   | 'card_game' | 'aftercare' | 'ice_play' | 'servant'
   | 'nurse' | 'pirate' | 'selfie' | 'yoga' | 'chef' | 'vampire' | 'dance' | 'whisper' | 'throne' | 'pillow_fight'
@@ -12,6 +12,7 @@ type FoxImageKey =
 const FOX_IMAGES: Record<FoxImageKey, string> = {
   blindfold: '/fox-assets/Game-Related/fox_bondage_2_blindfold.png',
   bondage: '/fox-assets/Game-Related/fox_bondage_shibari_rope.png',
+  bdsm_outfit: '/fox-assets/Game-Related/Fox_Both_BDSM_Skirt1.jpg',
   costume_police: '/fox-assets/Game-Related/fox_costume_2_police.png',
   costume_teacher: '/fox-assets/Game-Related/fox_costume_3_teacher.png',
   costume_stewardess: '/fox-assets/Game-Related/fox_costume_stewardess.png',
@@ -74,6 +75,8 @@ function detectFoxImage(game: any): FoxImageKey {
     return 'heavy_bondage';
   if (t.includes('rope') || t.includes('tied') || t.includes('bond') || t.includes('restrain') || t.includes('cuff') || t.includes('fesseln') || t.includes('seil'))
     return 'bondage';
+  if (t.includes('latex') || t.includes('bdsm') || t.includes('leather skirt') || t.includes('lederjupe') || t.includes('outfit') || t.includes('harness') || t.includes('geschirr'))
+    return 'bdsm_outfit';
   if (t.includes('dice') || t.includes('würfel') || t.includes('roll') || t.includes('board') || t.includes('brett'))
     return 'dice_game';
   if (t.includes('card') || t.includes('poker') || t.includes('karte') || t.includes('strip') || t.includes('bet') || t.includes('wette'))
@@ -112,7 +115,7 @@ function detectFoxImage(game: any): FoxImageKey {
   // Fallback: hash-based selection from all available images
   const hash = t.split('').reduce((a, c) => a + c.charCodeAt(0), 0);
   const allKeys: FoxImageKey[] = [
-    'costume_police', 'costume_teacher', 'costume_stewardess', 'sexy_fotos',
+    'bdsm_outfit', 'costume_police', 'costume_teacher', 'costume_stewardess', 'sexy_fotos',
     'dice_game', 'worship', 'leash', 'massage', 'interrogation', 'tease_denial',
     'card_game', 'aftercare', 'ice_play', 'servant',
     'nurse', 'pirate', 'selfie', 'yoga', 'chef', 'vampire', 'dance', 'whisper', 'throne', 'pillow_fight',
