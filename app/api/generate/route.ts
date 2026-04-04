@@ -1,4 +1,5 @@
 import Anthropic from "@anthropic-ai/sdk";
+import { GoogleGenAI } from "@google/genai";
 import { NextResponse } from "next/server";
 
 const SYSTEM_PROMPT = `You are an expert designer of intimate partner games for couples. You draw from a deep toolkit of game mechanics to create experiences that are genuinely playable, surprising, and hot.
@@ -47,11 +48,12 @@ export async function POST(req: Request) {
       ? "IMPORTANT: Generate the ENTIRE game (all titles, durations, and content) strictly in GERMAN language."
       : "IMPORTANT: Generate the ENTIRE game (all titles, durations, and content) strictly in ENGLISH language.";
 
-    if (!process.env.ANTHROPIC_API_KEY) {
-      return NextResponse.json({ error: "Missing ANTHROPIC_API_KEY" }, { status: 500 });
-    }
+    const hasAnthropic = !!process.env.ANTHROPIC_API_KEY;
+    const hasGemini = !!process.env.GEMINI_API_KEY;
 
-    const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+    if (!hasAnthropic && !hasGemini) {
+      return NextResponse.json({ error: "No AI API key configured" }, { status: 500 });
+    }
 
     let prompt = "";
 
@@ -131,14 +133,34 @@ Output ONLY a JSON object:
 }`;
     }
 
-    const response = await anthropic.messages.create({
-      model: "claude-sonnet-4-6",
-      max_tokens: 8192,
-      system: SYSTEM_PROMPT,
-      messages: [{ role: "user", content: prompt }],
-    });
+    let text = "";
 
-    const text = response.content[0].type === "text" ? response.content[0].text : "";
+    if (hasAnthropic) {
+      try {
+        const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+        const response = await anthropic.messages.create({
+          model: "claude-sonnet-4-6",
+          max_tokens: 8192,
+          system: SYSTEM_PROMPT,
+          messages: [{ role: "user", content: prompt }],
+        });
+        text = response.content[0].type === "text" ? response.content[0].text : "";
+      } catch (err: any) {
+        const isCredits = err?.status === 529 || err?.status === 402 || err?.message?.includes("credit") || err?.message?.includes("overload");
+        if (!isCredits || !hasGemini) throw err;
+        console.warn("Anthropic unavailable, falling back to Gemini:", err.message);
+      }
+    }
+
+    if (!text && hasGemini) {
+      const gemini = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+      const response = await gemini.models.generateContent({
+        model: "gemini-3.1-pro-preview",
+        contents: [{ role: "user", parts: [{ text: `${SYSTEM_PROMPT}\n\n---\n\n${prompt}` }] }],
+        config: { maxOutputTokens: 8192 },
+      });
+      text = response.text ?? "";
+    }
 
     // Strip markdown fences, then find the JSON object
     const stripped = text.replace(/^```(?:json)?\s*/m, '').replace(/```\s*$/m, '').trim();
