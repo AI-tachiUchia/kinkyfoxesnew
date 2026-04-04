@@ -985,6 +985,24 @@ function HomeContent({ session }: { session: any }) {
 
               {/* Tree-style sections */}
               <div className="font-sans leading-relaxed relative">
+                {game.sections && game.sections.length > 1 && (
+                  <div className="flex justify-end mb-3">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const allOpen = game.sections!.every((_, i) => openSections.has(i));
+                        if (allOpen) {
+                          setOpenSections(new Set());
+                        } else {
+                          setOpenSections(new Set(game.sections!.map((_, i) => i)));
+                        }
+                      }}
+                      className="text-[11px] tracking-widest uppercase text-[#d97757]/60 hover:text-[#d97757] font-medium transition-colors px-3 py-1.5 rounded-lg border border-white/[0.05] hover:border-[#d97757]/20 hover:bg-[#d97757]/5"
+                    >
+                      {game.sections.every((_, i) => openSections.has(i)) ? 'Alle zuklappen' : 'Alle aufklappen'}
+                    </button>
+                  </div>
+                )}
                 {game.sections ? (
                   <div className="relative">
                     {/* Vertical tree line */}

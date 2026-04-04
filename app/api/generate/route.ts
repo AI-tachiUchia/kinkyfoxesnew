@@ -59,6 +59,8 @@ export async function POST(req: Request) {
       prompt = `I have this game:
 ${JSON.stringify(currentGame)}
 
+Available toys/items: ${toys || "None specified"}
+
 Escalate it. Make it more intense, complex, and longer. You can:
 - Add new rounds or phases with pre-written content
 - Introduce twists, role reversals, or surprise mechanics
