@@ -10,7 +10,7 @@ const OUT_DIR = path.join(ROOT, "public", "fox-assets", "Game-Related");
 
 process.env.GOOGLE_APPLICATION_CREDENTIALS = path.join(ROOT, "vertex-express-key.json");
 
-const MODEL = "gemini-2.5-flash-image";
+const MODEL = "gemini-3.1-flash-image-preview";
 const API_BASE = "https://generativelanguage.googleapis.com/v1beta";
 
 // Read existing fox image as style reference

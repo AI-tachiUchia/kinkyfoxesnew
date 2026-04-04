@@ -261,37 +261,29 @@ export default function FoxDisplay({ isGenerating, game, heatLevel }: Props) {
 
   return (
     <div className="w-full relative select-none">
-      <div className="relative rounded-xl overflow-hidden"
-        style={{ boxShadow: '0 0 30px rgba(217,119,87,0.08), 0 0 1px rgba(217,119,87,0.2)' }}>
-
-        {/* Fox character image — contained within border box */}
-        <div className="relative w-full flex items-center justify-center" style={{ maxHeight: '160px', overflow: 'hidden' }}>
-          <img
-            src={foxSrc}
-            alt=""
-            width={512}
-            height={492}
-            className="w-auto h-full object-contain"
-            style={{ maxHeight: '160px' }}
-          />
-        </div>
+      {/* Fox character image — floating, no bounding box */}
+      <div className="relative w-full flex items-center justify-center" style={{ maxHeight: '180px', overflow: 'hidden' }}>
+        <img
+          src={foxSrc}
+          alt=""
+          width={512}
+          height={492}
+          className="w-auto h-full object-contain drop-shadow-[0_8px_24px_rgba(217,119,87,0.12)]"
+          style={{ maxHeight: '180px' }}
+        />
 
         {/* Particle canvas overlay */}
         <div className="absolute inset-0 pointer-events-none z-10">
           <canvas ref={canvasRef} width={CW} height={CH}
             style={{ display: 'block', width: '100%', height: '100%', imageRendering: 'pixelated' }} />
         </div>
-
-        {/* Scanlines */}
-        <div className="absolute inset-0 pointer-events-none z-20 opacity-[0.025]"
-          style={{ background: 'repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,1) 2px, rgba(0,0,0,1) 3px)' }} />
       </div>
 
-      {/* Dialogue bar */}
-      <div className="mt-2 bg-[#0a0d14]/90 border border-white/[0.06] rounded-lg px-4 py-2.5 flex items-center gap-2">
-        <span className="text-[#d97757]/60 text-xs shrink-0 animate-blink" style={{ fontFamily: 'var(--font-pixel), monospace', fontSize: '8px' }}>&#9654;</span>
-        <span className="text-gray-400 text-xs italic tracking-wide truncate">{dialogue}</span>
-      </div>
+      {/* Dialogue text — centered below fox */}
+      <p className="mt-3 text-center text-gray-500 text-xs italic tracking-wide">
+        <span className="text-[#d97757]/60 mr-1.5 animate-blink" style={{ fontFamily: 'var(--font-pixel), monospace', fontSize: '8px' }}>&#9654;</span>
+        {dialogue}
+      </p>
     </div>
   );
 }

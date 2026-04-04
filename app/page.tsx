@@ -7,7 +7,7 @@ import { supabase } from "../lib/supabase";
 import { useLanguage } from "./context/LanguageContext";
 import { translations } from "../lib/translations";
 import FoxDisplay from "./components/FoxDisplay";
-import FoxImage from "./components/FoxImage";
+import FoxImage, { detectFoxImage, FOX_IMAGES } from "./components/FoxImage";
 import FoxLoadingVideo from "./components/FoxLoadingVideo";
 
 function Auth() {
@@ -119,6 +119,7 @@ function HomeContent({ session }: { session: any }) {
 
   const [savedGames, setSavedGames] = useState<{id: string, title: string, game_data: GeneratedGame, created_at: string}[]>([]);
   const [showSavedGames, setShowSavedGames] = useState(false);
+  const [openSections, setOpenSections] = useState<Set<number>>(new Set([0]));
   const [isSavingGame, setIsSavingGame] = useState(false);
 
   const [partnerToys, setPartnerToys] = useState<Toy[]>([]);
@@ -138,6 +139,7 @@ function HomeContent({ session }: { session: any }) {
   };
 
   const stateRef = useRef({ distance, customDistance, toys, vibe, template, game, isGenerating, isComplicating, isRefining, savedToys });
+  const toysInputRef = useRef<HTMLInputElement>(null);
   useEffect(() => {
     stateRef.current = { distance, customDistance, toys, vibe, template, game, isGenerating, isComplicating, isRefining, savedToys };
   }, [distance, customDistance, toys, vibe, template, game, isGenerating, isComplicating, isRefining, savedToys]);
@@ -379,6 +381,7 @@ function HomeContent({ session }: { session: any }) {
 
   const handleLoadGame = (gameData: GeneratedGame) => {
     setGame(gameData);
+    setOpenSections(new Set([0]));
     broadcastState({ game: gameData });
     transitionTo('game');
   };
@@ -419,6 +422,7 @@ function HomeContent({ session }: { session: any }) {
       if (!response.ok) throw new Error('Failed');
       const data = await response.json();
       setGame(data);
+      setOpenSections(new Set([0]));
       setIsGenerating(false);
       setIsSurprising(false);
       transitionTo('game');
@@ -431,6 +435,14 @@ function HomeContent({ session }: { session: any }) {
       transitionTo('setup');
       broadcastState({ isGenerating: false });
     }
+  };
+
+  const toggleSection = (idx: number) => {
+    setOpenSections(prev => {
+      const next = new Set(prev);
+      if (next.has(idx)) next.delete(idx); else next.add(idx);
+      return next;
+    });
   };
 
   const transitionTo = (target: ViewState) => {
@@ -475,6 +487,7 @@ function HomeContent({ session }: { session: any }) {
 
       const data = await response.json();
       setGame(data);
+      setOpenSections(new Set([0]));
       setIsGenerating(false);
       transitionTo('game');
       broadcastState({ game: data, isGenerating: false });
@@ -633,8 +646,25 @@ function HomeContent({ session }: { session: any }) {
     strong: ({node, ...props}: any) => <strong className="font-medium text-gray-200" {...props} />,
   };
 
-  const inputCls = "w-full bg-[#0e1015] border border-white/[0.07] rounded-xl p-4 text-gray-200 text-sm focus:outline-none focus:ring-1 focus:ring-[#d97757]/60 focus:border-[#d97757]/40 transition-all duration-300 hover:border-white/[0.12] placeholder-gray-600";
-  const labelCls = "text-[11px] font-semibold tracking-[0.18em] text-gray-500 uppercase";
+  const inputCls = "w-full bg-[#181c22] border border-white/[0.13] rounded-xl p-4 text-gray-200 text-sm focus:outline-none focus:ring-1 focus:ring-[#d97757]/60 focus:border-[#d97757]/40 transition-all duration-300 hover:border-white/[0.2] placeholder-gray-600";
+  const labelCls = "text-[11px] font-semibold tracking-[0.18em] text-gray-400 uppercase";
+  const heatColors = ['#60a5fa', '#a78bfa', '#d97757', '#ef4444', '#dc2626'];
+  const heatColor = heatColors[heatLevel - 1];
+  const toyItems = toys.split(',').map(s => s.trim()).filter(Boolean);
+  const handleRemoveToyItem = (idx: number) => {
+    const next = toyItems.filter((_, i) => i !== idx).join(', ');
+    setToys(next);
+    broadcastState({ toys: next });
+  };
+  const handleAddToyItem = () => {
+    if (!toysInputRef.current) return;
+    const val = toysInputRef.current.value.trim().replace(/,\s*$/, '');
+    if (!val) return;
+    const next = toys ? `${toys}, ${val}` : val;
+    setToys(next);
+    broadcastState({ toys: next });
+    toysInputRef.current.value = '';
+  };
 
   return (
     <main className="min-h-screen bg-[#121418] relative overflow-hidden font-sans">
@@ -679,7 +709,7 @@ function HomeContent({ session }: { session: any }) {
                 </h1>
                 {roomId && (
                   <button onClick={handleCopyLink}
-                    className="text-xs tracking-widest uppercase text-[#d97757] bg-[#d97757]/10 hover:bg-[#d97757]/20 px-4 py-2 rounded-full border border-[#d97757]/20 transition-all flex items-center gap-2">
+                    className="text-xs tracking-widest uppercase text-[#d97757] bg-[#d97757]/20 hover:bg-[#d97757]/30 px-4 py-2 rounded-full border border-[#d97757]/40 transition-all flex items-center gap-2" style={{ boxShadow: '0 2px 12px rgba(217,119,87,0.15)' }}>
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
                     {t.nav.copyLink}
                   </button>
@@ -722,13 +752,13 @@ function HomeContent({ session }: { session: any }) {
                   </button>
                 </div>
                 {showToybox && (
-                  <div className="bg-[#121418] border border-white/[0.08] rounded-lg p-3 space-y-3">
+                  <div className="bg-[#121418] border border-white/[0.08] rounded-xl p-3 space-y-3">
                     {savedToys.length > 0 ? (
                       <div className="flex flex-wrap gap-2">
                         {savedToys.map(toy => (
                           <div key={toy.id} className="flex items-center gap-0.5">
                             <button type="button" onClick={() => handleToggleToy(toy.id)}
-                              className={`px-3 py-1.5 rounded-l-full text-xs font-medium tracking-wide transition-all border-y border-l ${
+                              className={`px-4 py-2 rounded-l-full text-xs font-medium tracking-wide transition-all border-y border-l ${
                                 selectedToyIds.has(toy.id)
                                   ? 'bg-[#d97757]/20 border-[#d97757]/50 text-[#d97757]'
                                   : 'bg-white/5 border-white/10 text-gray-400 hover:border-white/20 hover:text-gray-300'
@@ -736,7 +766,7 @@ function HomeContent({ session }: { session: any }) {
                               {toy.name}
                             </button>
                             <button type="button" onClick={() => handleDeleteToy(toy.id)}
-                              className={`px-2 py-1.5 rounded-r-full text-xs transition-all border-y border-r ${
+                              className={`px-3 py-2 rounded-r-full text-xs transition-all border-y border-r ${
                                 selectedToyIds.has(toy.id)
                                   ? 'bg-[#d97757]/10 border-[#d97757]/50 text-[#d97757]/50 hover:text-red-400 hover:border-red-400/50'
                                   : 'bg-white/5 border-white/10 text-gray-600 hover:text-red-400 hover:border-red-400/30'
@@ -753,16 +783,17 @@ function HomeContent({ session }: { session: any }) {
                       <input type="text" placeholder={t.setup.addToyPlaceholder}
                         value={newToyName} onChange={e => setNewToyName(e.target.value)}
                         onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleAddToy(); } }}
-                        className="flex-1 bg-[#1e2126] border border-white/[0.08] rounded-lg px-3 py-2 text-gray-200 text-sm focus:outline-none focus:ring-1 focus:ring-[#d97757] focus:border-[#d97757] transition-all" />
+                        className="flex-1 bg-[#1e2126] border border-white/[0.08] rounded-xl px-3 py-2 text-gray-200 text-sm focus:outline-none focus:ring-1 focus:ring-[#d97757] focus:border-[#d97757] transition-all" />
                       <button type="button" onClick={handleAddToy} disabled={isAddingToy || !newToyName.trim()}
-                        className="px-4 py-2 bg-[#d97757]/20 hover:bg-[#d97757]/30 border border-[#d97757]/30 text-[#d97757] rounded-lg text-sm font-medium transition-all disabled:opacity-50">
+                        className="px-4 py-2 bg-[#d97757] hover:bg-[#e08568] text-[#0e1015] rounded-lg text-sm font-semibold transition-all disabled:opacity-40"
+                        style={{ boxShadow: '0 2px 10px rgba(217,119,87,0.3)' }}>
                         {isAddingToy ? '...' : t.setup.addToyButton}
                       </button>
                     </div>
                   </div>
                 )}
                 {partnerToys.length > 0 && (
-                  <div className="bg-[#121418] border border-white/[0.08] rounded-lg p-3 space-y-2">
+                  <div className="bg-[#121418] border border-white/[0.08] rounded-xl p-3 space-y-2">
                     <label className={labelCls}>{t.login.partnersItems}</label>
                     <div className="flex flex-wrap gap-2">
                       {partnerToys.map(toy => (
@@ -776,8 +807,23 @@ function HomeContent({ session }: { session: any }) {
                 )}
                 <div className="space-y-2 pt-1">
                   <label className={labelCls}>{t.login.availableItemsLabel}</label>
-                  <input type="text" placeholder="e.g., blindfold, ice..." className={inputCls}
-                    value={toys} onChange={handleChange(setToys, 'toys')} />
+                  <div className="flex flex-wrap gap-2 bg-[#181c22] border border-white/[0.13] rounded-xl p-3 min-h-[52px] items-center hover:border-white/[0.2] transition-all duration-300">
+                    {toyItems.map((item, i) => (
+                      <div key={i} className="flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-medium bg-white/8 border border-white/15 text-gray-300">
+                        <span>{item}</span>
+                        <button type="button" onClick={() => handleRemoveToyItem(i)} className="ml-1 text-gray-500 hover:text-red-400 transition-colors leading-none">×</button>
+                      </div>
+                    ))}
+                    <input
+                      ref={toysInputRef}
+                      type="text"
+                      placeholder={toyItems.length ? '+ mehr...' : 'blindfold, eis...'}
+                      className="flex-1 min-w-[80px] bg-transparent text-gray-200 text-sm outline-none placeholder-gray-600 py-1 px-1"
+                      onKeyDown={e => {
+                        if (e.key === 'Enter' || e.key === ',') { e.preventDefault(); handleAddToyItem(); }
+                      }}
+                    />
+                  </div>
                 </div>
               </div>
 
@@ -785,6 +831,7 @@ function HomeContent({ session }: { session: any }) {
                 <label className={labelCls}>{t.login.atmosphereLabel}</label>
                 <textarea placeholder="e.g., slow tease, intense, sensory deprivation..."
                   className={`${inputCls} h-28 resize-none`}
+                  style={{ padding: '18px 20px' }}
                   value={vibe} onChange={handleChange(setVibe, 'vibe')} />
               </div>
 
@@ -803,7 +850,7 @@ function HomeContent({ session }: { session: any }) {
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <label className={labelCls}>
-                    Heat Level — <span className="text-[#d97757]">{t.setup.heatLevels[heatLevel - 1]}</span>
+                    Heat Level — <span style={{ color: heatColor, transition: 'color 0.3s' }}>{t.setup.heatLevels[heatLevel - 1]}</span>
                   </label>
                   <button type="button" onClick={() => setShowHeatLegend(v => !v)}
                     className="text-xs text-gray-500 hover:text-[#d97757] transition-colors tracking-widest uppercase">
@@ -812,12 +859,17 @@ function HomeContent({ session }: { session: any }) {
                 </div>
                 <input type="range" min={1} max={5} value={heatLevel}
                   onChange={e => setHeatLevel(Number(e.target.value))}
-                  className="w-full accent-[#d97757] cursor-pointer" />
-                <div className="flex justify-between text-[10px] text-gray-600 tracking-wide px-0.5">
-                  {['1','2','3','4','5'].map(n => <span key={n}>{n}</span>)}
+                  className="heat-slider w-full"
+                  style={{ '--heat-color': heatColor } as React.CSSProperties} />
+                <div className="flex justify-between text-[10px] tracking-wide px-0.5 -mt-0.5">
+                  {heatColors.map((c, i) => (
+                    <span key={i} style={{ color: heatLevel >= i + 1 ? c : '#4b5563', transition: 'color 0.3s', fontWeight: heatLevel === i + 1 ? 600 : 400 }}>
+                      {i + 1}
+                    </span>
+                  ))}
                 </div>
                 {showHeatLegend && (
-                  <div className="bg-[#121418] border border-white/[0.08] rounded-lg p-4 space-y-2 text-xs text-gray-400">
+                  <div className="bg-[#121418] border border-white/[0.08] rounded-xl p-4 space-y-2 text-xs text-gray-400">
                     {[
                       ['1 — Cozy', 'Foot rubs and prolonged eye contact. Your grandma could watch.'],
                       ['2 — Flirty', 'Compliments that are definitely flirting. Deniable, barely.'],
@@ -834,42 +886,46 @@ function HomeContent({ session }: { session: any }) {
                 )}
               </div>
 
-              <div className="flex gap-3 pt-2">
-                <button onClick={handleGenerate}
-                  disabled={isGenerating || !distance || (distance === 'custom' && !customDistance)}
-                  className="flex-1 flex justify-center items-center gap-2 bg-gradient-to-r from-[#d97757] to-[#c66849] hover:from-[#e0856a] hover:to-[#d97757] text-[#0e1015] font-semibold text-sm tracking-wide uppercase py-4 px-6 rounded-xl transition-all duration-300 disabled:opacity-40 disabled:cursor-not-allowed"
-                  style={{ boxShadow: '0 4px 20px rgba(217,119,87,0.25), inset 0 1px 0 rgba(255,255,255,0.15)' }}>
-                  {t.setup.generateButton}
-                </button>
-                <button onClick={handleSurprise} disabled={isGenerating}
-                  className="flex-shrink-0 flex justify-center items-center gap-2 bg-[#0e1015] hover:bg-[#161920] border border-[#d97757]/30 hover:border-[#d97757]/70 text-[#d97757] font-semibold text-sm tracking-wide uppercase py-4 px-5 rounded-xl transition-all duration-300 disabled:opacity-40 disabled:cursor-not-allowed"
-                  style={{ boxShadow: '0 2px 12px rgba(217,119,87,0.08)' }}>
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" /></svg>
-                  {t.setup.surpriseMeButton}
-                </button>
+              <div className="space-y-2">
+                <div className="flex gap-3">
+                  <button onClick={handleGenerate}
+                    disabled={isGenerating || !distance || (distance === 'custom' && !customDistance)}
+                    className="flex-1 flex justify-center items-center gap-2 bg-gradient-to-r from-[#d97757] to-[#c66849] hover:from-[#e0856a] hover:to-[#d97757] text-[#0e1015] font-semibold text-sm tracking-wide uppercase py-4 px-6 rounded-xl transition-all duration-300 disabled:opacity-40 disabled:cursor-not-allowed"
+                    style={{ boxShadow: '0 4px 20px rgba(217,119,87,0.25), inset 0 1px 0 rgba(255,255,255,0.15)' }}>
+                    {t.setup.generateButton}
+                  </button>
+                  <button onClick={handleSurprise} disabled={isGenerating}
+                    className="flex-shrink-0 flex justify-center items-center gap-2 bg-[#0e1015] hover:bg-[#161920] border border-[#d97757]/20 hover:border-[#d97757]/50 text-[#d97757]/75 hover:text-[#d97757] font-medium text-sm tracking-wide uppercase py-4 px-5 rounded-xl transition-all duration-300 disabled:opacity-40 disabled:cursor-not-allowed"
+                    style={{ boxShadow: '0 0 20px rgba(217,119,87,0.05), inset 0 0 20px rgba(217,119,87,0.03)' }}>
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" /></svg>
+                    {t.setup.surpriseMeButton}
+                  </button>
+                </div>
+                <label className="w-full flex justify-center items-center gap-2 bg-[#0e1015] hover:bg-[#161920] border border-white/[0.06] hover:border-white/[0.12] text-gray-400 hover:text-gray-300 font-medium text-xs tracking-widest uppercase py-3 px-6 rounded-xl transition-all duration-300 cursor-pointer">
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" /></svg>
+                  {t.login.importJson}
+                  <input type="file" accept=".json" className="hidden" onChange={handleImportGame} />
+                </label>
               </div>
-
-              <label className="w-full flex justify-center items-center gap-2 bg-[#0e1015] hover:bg-[#161920] border border-white/[0.06] hover:border-white/[0.12] text-gray-400 hover:text-gray-300 font-medium text-xs tracking-widest uppercase py-3.5 px-6 rounded-xl transition-all duration-300 cursor-pointer">
-                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" /></svg>
-                {t.login.importJson}
-                <input type="file" accept=".json" className="hidden" onChange={handleImportGame} />
-              </label>
 
               {/* Saved Games */}
               <div className="space-y-3 pt-2 border-t border-white/[0.05]">
                 <div className="flex items-center justify-between">
                   <label className={labelCls}>{t.savedGames.title}</label>
                   <button type="button" onClick={() => setShowSavedGames(v => !v)}
-                    className="text-xs text-gray-500 hover:text-gray-300 transition-colors tracking-widest uppercase">
+                    className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-300 hover:underline transition-colors tracking-widest uppercase">
                     {showSavedGames ? t.setup.toyboxToggleHide : `${t.setup.toyboxToggleShow} (${savedGames.length})`}
+                    <svg className={`w-3 h-3 transition-transform duration-200 ${showSavedGames ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
                   </button>
                 </div>
                 {showSavedGames && (
-                  <div className="bg-[#121418] border border-white/[0.08] rounded-lg p-3 space-y-2">
+                  <div className="bg-[#121418] border border-white/[0.08] rounded-xl p-3 space-y-2">
                     {savedGames.length > 0 ? (
                       <div className="flex flex-col gap-2">
                         {savedGames.map(sg => (
-                          <div key={sg.id} className="flex items-center justify-between gap-2 bg-white/5 border border-white/[0.08] rounded-lg px-4 py-3 hover:border-white/[0.15] transition-all">
+                          <div key={sg.id} className="flex items-center justify-between gap-2 bg-white/5 border border-white/[0.08] rounded-xl px-4 py-3 hover:border-white/[0.15] transition-all">
                             <button type="button" onClick={() => handleLoadGame(sg.game_data)}
                               className="flex-1 text-left text-sm text-gray-300 hover:text-white transition-colors truncate">
                               {sg.title}
@@ -933,29 +989,56 @@ function HomeContent({ session }: { session: any }) {
                     {/* Vertical tree line */}
                     <div className="absolute left-[19px] top-4 bottom-4 w-px bg-gradient-to-b from-[#d97757]/40 via-[#d97757]/20 to-transparent" />
 
-                    {game.sections.map((section, idx) => (
-                      <div key={idx} className={`relative flex gap-4 mb-4 last:mb-0 float-up-d${Math.min(idx + 1, 3)}`}>
-                        {/* Tree node dot */}
-                        <div className="relative shrink-0 flex flex-col items-center pt-5">
-                          <div className="w-[10px] h-[10px] rounded-full border-2 border-[#d97757] bg-[#121418] z-10 shadow-[0_0_8px_rgba(217,119,87,0.3)]" />
-                        </div>
+                    {game.sections.map((section, idx) => {
+                      const isOpen = openSections.has(idx);
+                      return (
+                        <div key={idx} className={`relative flex gap-4 mb-4 last:mb-0 float-up-d${Math.min(idx + 1, 3)}`}>
+                          {/* Tree node dot */}
+                          <div className="relative shrink-0 flex flex-col items-center pt-5">
+                            <div className={`w-[10px] h-[10px] rounded-full border-2 bg-[#121418] z-10 transition-all duration-300 ${isOpen ? 'border-[#d97757] shadow-[0_0_8px_rgba(217,119,87,0.3)]' : 'border-white/20'}`} />
+                          </div>
 
-                        {/* Section card */}
-                        <div className="flex-1 bg-[#1e2126]/60 backdrop-blur-md border border-white/[0.06] rounded-xl overflow-hidden hover:border-white/[0.12] transition-all duration-300 group">
-                          <div className="px-5 py-4 flex items-center gap-3 border-b border-white/[0.04]">
-                            <span className="text-[10px] font-medium tracking-widest uppercase text-[#d97757]/60 bg-[#d97757]/8 px-2 py-0.5 rounded font-mono">
-                              {String(idx + 1).padStart(2, '0')}
-                            </span>
-                            <h3 className="font-serif text-base text-gray-200 group-hover:text-[#d97757] transition-colors">
-                              {section.title}
-                            </h3>
-                          </div>
-                          <div className="px-5 py-4">
-                            <ReactMarkdown components={markdownComponents}>{section.content}</ReactMarkdown>
+                          {/* Section card */}
+                          <div className={`flex-1 bg-[#1e2126]/60 backdrop-blur-md border rounded-xl overflow-hidden transition-all duration-300 ${isOpen ? 'border-white/[0.10]' : 'border-white/[0.05]'}`}>
+                            <button
+                              type="button"
+                              onClick={() => toggleSection(idx)}
+                              className="w-full px-5 py-4 flex items-center gap-3 text-left hover:bg-white/[0.03] transition-colors"
+                            >
+                              <span className="text-[10px] font-medium tracking-widest uppercase text-[#d97757]/60 px-2 py-0.5 rounded font-mono shrink-0">
+                                {String(idx + 1).padStart(2, '0')}
+                              </span>
+                              <h3 className={`flex-1 font-serif text-base transition-colors ${isOpen ? 'text-[#d97757]' : 'text-gray-300'}`}>
+                                {section.title}
+                              </h3>
+                              <svg
+                                className={`w-4 h-4 text-gray-500 shrink-0 transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`}
+                                fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                              >
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                              </svg>
+                            </button>
+                            {isOpen && (
+                              <div className="px-5 pb-5 border-t border-white/[0.04]">
+                                <div className="pt-4 relative">
+                                  {(() => {
+                                    const sectionKey = detectFoxImage({ title: section.title, content: section.content });
+                                    return sectionKey !== 'default' ? (
+                                      <img
+                                        src={FOX_IMAGES[sectionKey]}
+                                        alt=""
+                                        className="float-right ml-3 mb-2 w-20 h-20 object-contain opacity-80 drop-shadow-md"
+                                      />
+                                    ) : null;
+                                  })()}
+                                  <ReactMarkdown components={markdownComponents}>{section.content}</ReactMarkdown>
+                                </div>
+                              </div>
+                            )}
                           </div>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 ) : (
                   <div className="text-gray-300 float-up-d1 bg-[#1e2126]/60 backdrop-blur-md border border-white/[0.06] rounded-2xl p-6">
