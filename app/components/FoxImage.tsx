@@ -133,6 +133,7 @@ type Props = {
 export default function FoxImage({ game, className = '', overlay }: Props) {
   const key = detectFoxImage(game);
   const src = FOX_IMAGES[key];
+  const isPixelArt = src.includes('fox_pixel_');
   const [loaded, setLoaded] = useState(false);
   const [prevSrc, setPrevSrc] = useState<string | null>(null);
   const [currentSrc, setCurrentSrc] = useState(src);
@@ -157,7 +158,7 @@ export default function FoxImage({ game, className = '', overlay }: Props) {
 
       {/* Previous image crossfade */}
       {prevSrc && (
-        <img src={prevSrc} alt="" width={512} height={492} className="absolute inset-0 w-full h-full object-cover object-center transition-opacity duration-700 opacity-40" />
+        <img src={prevSrc} alt="" width={512} height={492} className={`absolute inset-0 w-full h-full transition-opacity duration-700 opacity-40 ${prevSrc.includes('fox_pixel_') ? 'object-contain object-bottom p-4' : 'object-cover object-center'}`} />
       )}
 
       {/* Main fox image */}
@@ -167,9 +168,9 @@ export default function FoxImage({ game, className = '', overlay }: Props) {
         width={512}
         height={492}
         onLoad={handleLoad}
-        className={`absolute inset-0 w-full h-full object-cover object-center transition-all duration-700 ease-out ${
+        className={`absolute inset-0 w-full h-full transition-all duration-700 ease-out ${
           loaded ? 'opacity-100 scale-100' : 'opacity-0 scale-[1.03]'
-        }`}
+        } ${isPixelArt ? 'object-contain object-bottom p-4' : 'object-cover object-center'}`}
       />
 
       {/* Bottom fade — blends into card bg */}
