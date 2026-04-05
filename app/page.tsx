@@ -84,6 +84,26 @@ type Toy = {
   description?: string;
 };
 
+function getToyComment(toysString: string): string | null {
+  if (!toysString) return null;
+  const t = toysString.toLowerCase();
+  
+  if (t.includes('analkette') || t.includes('anal beads')) return "Eine Analkette? Ein(e) Schmuckliebhaber/in also! 📿 (Tipp: Nicht als Weihnachtsgeschenk geeignet)";
+  if (t.includes('peitsche') || t.includes('whip') || t.includes('gerte') || t.includes('crop')) return "Eine Peitsche? Jemand hat wohl eine Strafe verdient... 🐎";
+  if (t.includes('handschellen') || t.includes('handcuffs') || t.includes('fessel')) return "Handschellen? Hoffentlich habt ihr den Schlüssel nicht verlegt! 👮";
+  if (t.includes('augenbinde') || t.includes('blindfold')) return "Augenbinde! Vertrauen ist gut, Kontrollverlust ist besser. 🫣";
+  if (t.includes('vibrator') || t.includes('dildo') || t.includes('wand') || t.includes('magic wand') || t.includes('rose')) return "Der gute alte Klassiker. Kann nie schaden! 🔋";
+  if (t.includes('knebel') || t.includes('gag')) return "Heute mal etwas leiser unterwegs? 🤐";
+  if (t.includes('eis') || t.includes('ice') || t.includes('eiswürfel')) return "Eiswürfel? Ziemlich cool. Hoffentlich ist es warm genug im Zimmer. 🧊";
+  if (t.includes('seil') || t.includes('rope') || t.includes('shibari') || t.includes('bondage')) return "Seil? Wir haben wohl einen kleinen Pfadfinder hier! 🪢";
+  if (t.includes('plug') || t.includes('buttplug')) return "Das kleine Geheimnis für zwischendurch... 🤫";
+  if (t.includes('kerze') || t.includes('candle') || t.includes('wachs') || t.includes('wax')) return "Wachs? Das wird heiß... wortwörtlich. 🕯️";
+  if (t.includes('halsband') || t.includes('collar')) return "Ein Halsband? Wer ist hier der brave Hund? 🐕";
+  if (t.includes('klammer') || t.includes('clamp') || t.includes('nipple')) return "Klammern! Ein kleiner, fieser Schmerz. 🤏";
+
+  return null;
+}
+
 function HomeContent({ session }: { session: any }) {
   const { language, setLanguage } = useLanguage();
   const t = translations[language];
@@ -683,6 +703,7 @@ function HomeContent({ session }: { session: any }) {
   const heatColors = ['#60a5fa', '#a78bfa', '#d97757', '#ef4444', '#dc2626'];
   const heatColor = heatColors[heatLevel - 1];
   const toyItems = toys.split(',').map(s => s.trim()).filter(Boolean);
+  const toyComment = getToyComment(toys);
   const handleRemoveToyItem = (idx: number) => {
     const next = toyItems.filter((_, i) => i !== idx).join(', ');
     setToys(next);
@@ -856,6 +877,11 @@ function HomeContent({ session }: { session: any }) {
                       }}
                     />
                   </div>
+                  {toyComment && (
+                    <p className="text-xs text-[#d97757] italic pt-1 px-1 animate-pulse">
+                      {toyComment}
+                    </p>
+                  )}
                 </div>
               </div>
 
