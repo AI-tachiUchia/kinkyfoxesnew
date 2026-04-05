@@ -10,6 +10,7 @@ import FoxDisplay from "./components/FoxDisplay";
 import FoxImage, { detectFoxImage, FOX_IMAGES } from "./components/FoxImage";
 import FoxLoadingVideo from "./components/FoxLoadingVideo";
 import GameMasterSetup from "./components/GameMasterSetup";
+import ClassicSetup from "./components/ClassicSetup";
 
 function Auth() {
   const { language, setLanguage } = useLanguage();
@@ -117,6 +118,8 @@ function HomeContent({ session }: { session: any }) {
   const [toys, setToys] = useState("");
   const [vibe, setVibe] = useState("");
   const [template, setTemplate] = useState("");
+  const [useClassic, setUseClassic] = useState(() => searchParams.get('classic') === '1');
+  useEffect(() => { setUseClassic(searchParams.get('classic') === '1'); }, [searchParams]);
   const [heatLevel, setHeatLevel] = useState(3);
   const [game, setGame] = useState<GeneratedGame | null>(null);
   
@@ -777,7 +780,39 @@ function HomeContent({ session }: { session: any }) {
               <FoxDisplay isGenerating={isGenerating} game={game} heatLevel={heatLevel} setupText={`${vibe} ${toys} ${distance === 'custom' ? customDistance : distance}`} />
             </div>
 
-            {/* Config card */}
+            {/* Config card / Setup Wizard */}
+            <div className="w-full flex justify-end mb-2">
+              <button onClick={() => {
+                  const url = new URL(window.location.href);
+                  if (useClassic) url.searchParams.delete('classic');
+                  else url.searchParams.set('classic', '1');
+                  router.replace(url.pathname + url.search);
+                  setUseClassic(!useClassic);
+                }} 
+                className="text-[10px] text-gray-500 hover:text-gray-300 uppercase tracking-widest flex items-center gap-1.5 transition-colors">
+                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" /></svg>
+                {useClassic ? "Zum Game Master wechseln" : "Zum klassischen Formular wechseln"}
+              </button>
+            </div>
+
+            {useClassic ? (
+              <ClassicSetup
+                distance={distance} setDistance={setDistance}
+                customDistance={customDistance} setCustomDistance={setCustomDistance}
+                heatLevel={heatLevel} setHeatLevel={setHeatLevel}
+                vibe={vibe} setVibe={setVibe}
+                template={template} setTemplate={setTemplate}
+                toys={toys} setToys={setToys}
+                savedToys={savedToys} partnerToys={partnerToys}
+                selectedToyIds={selectedToyIds} handleToggleToy={handleToggleToy} handleDeleteToy={handleDeleteToy}
+                newToyName={newToyName} setNewToyName={setNewToyName} handleAddToy={handleAddToy} isAddingToy={isAddingToy}
+                toyItems={toyItems} handleRemoveToyItem={handleRemoveToyItem} handleAddToyItem={handleAddToyItem} toysInputRef={toysInputRef} toyComment={toyComment}
+                showToybox={showToybox} setShowToybox={setShowToybox}
+                onGenerate={handleGenerate} isGenerating={isGenerating} onSurprise={handleSurprise}
+                showHeatLegend={showHeatLegend} setShowHeatLegend={setShowHeatLegend}
+                broadcastState={broadcastState}
+              />
+            ) : (
             <GameMasterSetup
               distance={distance} setDistance={setDistance}
               customDistance={customDistance} setCustomDistance={setCustomDistance}
@@ -792,6 +827,7 @@ function HomeContent({ session }: { session: any }) {
               showToybox={showToybox} setShowToybox={setShowToybox}
               onGenerate={handleGenerate} isGenerating={isGenerating} onSurprise={handleSurprise}
             />
+            )}
 
             <div className="w-full pt-1 animate-fade-in">
               <label className="w-full flex justify-center items-center gap-2 bg-[#0e1015] hover:bg-[#161920] border border-white/[0.06] hover:border-white/[0.12] text-gray-400 hover:text-gray-300 font-medium text-xs tracking-widest uppercase py-4 px-6 rounded-xl transition-all duration-300 cursor-pointer shadow-lg">
