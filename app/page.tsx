@@ -116,15 +116,15 @@ function HomeContent({ session }: { session: any }) {
   // Admin panel
   const adminSecret = process.env.NEXT_PUBLIC_ADMIN_SECRET;
   const urlAdmin = searchParams.get('admin');
-  const isAdmin = !!adminSecret && urlAdmin === adminSecret;
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
-    if (urlAdmin) {
-      console.log("Admin Check:", { 
-        param: urlAdmin, 
-        configured: adminSecret, 
-        match: urlAdmin === adminSecret 
-      });
+    if (urlAdmin && adminSecret && urlAdmin === adminSecret) {
+      setIsAdmin(true);
+      if (typeof window !== 'undefined') sessionStorage.setItem('foxAdmin', 'true');
+      console.log("Admin Mode Activated via URL");
+    } else if (typeof window !== 'undefined' && sessionStorage.getItem('foxAdmin') === 'true') {
+      setIsAdmin(true);
     }
   }, [urlAdmin, adminSecret]);
 
@@ -172,7 +172,9 @@ function HomeContent({ session }: { session: any }) {
   useEffect(() => {
     if (!roomId) {
       const newRoomId = Math.random().toString(36).substring(2, 9);
-      router.replace(`/?room=${newRoomId}`);
+      const params = new URLSearchParams(window.location.search);
+      params.set('room', newRoomId);
+      router.replace(`/?${params.toString()}`);
     }
   }, [roomId, router]);
 
