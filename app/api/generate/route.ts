@@ -24,13 +24,12 @@ CRITICAL RULES FOR EVERY GAME:
 2. **Pre-generate all content.** If the game has rounds, write what happens in each round. If it has challenges, list them. If it has cards/prompts, provide them — at least 8-12 items. Players should be able to play immediately without inventing anything.
 3. **NEVER announce phases/rounds you don't fully write.** If you say the game has 4 phases, you MUST write out ALL 4 phases completely. If you list a round by name, you MUST fully describe it. NEVER use placeholder text like "(continue similarly for rounds 3 and 4)" or "repeat for remaining phases" or "etc." Every announced element must be fully written. If you cannot fit it, reduce the number of phases/rounds — but always deliver 100% of what you announce.
 4. **Include clear rules.** How do you win/lose? What triggers escalation? When does a round end? How are turns structured? Write it so two people can pick this up and play with zero ambiguity.
-5. **Add Emojis to Section Titles.** Every section title (e.g., "Intro", "The Dare", "Aftercare") MUST include 1-2 fitting emojis at the beginning or end to make it more playful (e.g., "🔥 Die erste Berührung", "🍷 Das Vorspiel").
-6. **Be focused, not bloated.** Aim for 5–7 tight sections. A great game is dense and playable, not a novel. Each section should contain only what players actually need in that moment. Don't pad with repetition or meta-commentary.
-7. **No theatre scripts.** NEVER write exact words for players to say. Describe what needs to happen and the emotional/power intent — players improvise in the moment. Instead of *"Say: 'I want you to...' "* write *"Tell your partner explicitly what you want them to do to you."* The game guides the experience; it does not put words in anyone's mouth.
-8. **Build in escalation.** Games should start lighter and build intensity. Early rounds warm up; later rounds push boundaries. The arc matters.
-9. **Match the setup.** If players are long-distance, rules must work over video/phone. If restrained, account for limited movement. If toys are listed, integrate them meaningfully — don't just mention them.
-10. **Include safety.** Mention safewords naturally (traffic light system). For intense games, include aftercare suggestions.
-11. **Be creative, not generic.** Avoid cliché "truth or dare" retreads unless specifically requested. Combine mechanics in unexpected ways. Surprise the players.`;
+5. **Be focused, not bloated.** Aim for 5–7 tight sections. A great game is dense and playable, not a novel. Each section should contain only what players actually need in that moment. Don't pad with repetition or meta-commentary.
+6. **No theatre scripts.** NEVER write exact words for players to say. Describe what needs to happen and the emotional/power intent — players improvise in the moment. Instead of *"Say: 'I want you to...' "* write *"Tell your partner explicitly what you want them to do to you."* The game guides the experience; it does not put words in anyone's mouth.
+7. **Build in escalation.** Games should start lighter and build intensity. Early rounds warm up; later rounds push boundaries. The arc matters.
+8. **Match the setup.** If players are long-distance, rules must work over video/phone. If restrained, account for limited movement. If toys are listed, integrate them meaningfully — don't just mention them.
+9. **Include safety.** Mention safewords naturally (traffic light system). For intense games, include aftercare suggestions.
+10. **Be creative, not generic.** Avoid cliché "truth or dare" retreads unless specifically requested. Combine mechanics in unexpected ways. Surprise the players.`;
 
 export async function POST(req: Request) {
   try {

@@ -549,7 +549,6 @@ function HomeContent({ session }: { session: any }) {
 
       const data = await response.json();
       setGame(data);
-      setOpenSections(new Set([0]));
       broadcastState({ game: data, isComplicating: false });
     } catch (error) {
       console.error(error);
@@ -582,7 +581,6 @@ function HomeContent({ session }: { session: any }) {
 
       const data = await response.json();
       setGame(data);
-      setOpenSections(new Set([0]));
       setRefinementText("");
       setShowRefineInput(false);
       broadcastState({ game: data, isRefining: false });
