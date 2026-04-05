@@ -6,7 +6,7 @@ type FoxImageKey =
   | 'dice_game' | 'worship' | 'leash' | 'massage' | 'interrogation' | 'tease_denial'
   | 'card_game' | 'aftercare' | 'ice_play' | 'servant'
   | 'nurse' | 'pirate' | 'selfie' | 'yoga' | 'chef' | 'vampire' | 'dance' | 'whisper' | 'throne' | 'pillow_fight'
-  | 'heavy_bondage' | 'suspension' | 'collar_crawl' | 'wax_play'
+  | 'heavy_bondage' | 'suspension' | 'collar_crawl' | 'wax_play' | 'spanking'
   | 'default';
 
 const FOX_IMAGES: Record<FoxImageKey, string> = {
@@ -15,10 +15,10 @@ const FOX_IMAGES: Record<FoxImageKey, string> = {
   bdsm_outfit: '/fox-assets/Game-Related/Fox_Both_BDSM_Skirt1.jpg',
   costume_police: '/fox-assets/Game-Related/fox_costume_2_police.png',
   costume_teacher: '/fox-assets/Game-Related/fox_costume_3_teacher.png',
-  costume_stewardess: '/fox-assets/Game-Related/fox_costume_stewardess.png',
-  sexy_fotos: '/fox-assets/Game-Related/fox_costume_4_sexy_fotos.png',
+  costume_stewardess: '/fox-assets/Game-Related/fox-assets-approved/fox_costume_stewardess_newSubmissive.png',
+  sexy_fotos: '/fox-assets/Game-Related/fox-assets-approved/fox_photographing_posing_female_fox_spicy_clothes_sub_female_dom_male.png',
   dice_game: '/fox-assets/Game-Related/fox_dice_game.png',
-  worship: '/fox-assets/Game-Related/fox_worship_kneel.png',
+  worship: '/fox-assets/Game-Related/fox-assets-approved/fox_worship_kneel_rehaul_sub_male_dom_female.png',
   leash: '/fox-assets/Game-Related/fox_leash_petplay.png',
   massage: '/fox-assets/Game-Related/fox_massage_sensory.png',
   interrogation: '/fox-assets/Game-Related/fox_interrogation.png',
@@ -27,9 +27,10 @@ const FOX_IMAGES: Record<FoxImageKey, string> = {
   aftercare: '/fox-assets/Game-Related/fox_aftercare_cuddle.png',
   ice_play: '/fox-assets/Game-Related/fox_ice_temperature.png',
   servant: '/fox-assets/Game-Related/fox_servant_master.png',
-  nurse: '/fox-assets/Game-Related/fox_nurse_patient.png',
+  nurse: '/fox-assets/Game-Related/fox-assets-approved/fox_nurse_sub_male_female_dom_roleplay.jpeg',
   pirate: '/fox-assets/Game-Related/fox_pirate_captive.png',
-  selfie: '/fox-assets/Game-Related/fox_mirror_selfie.png',
+  selfie: '/fox-assets/Game-Related/fox-assets-approved/fox_famela_sending_spicy_photo_selfie.jpeg',
+  spanking: '/fox-assets/Game-Related/fox-assets-approved/fox_spanking_punishment_for_sub_teacher_roleplay.png',
   yoga: '/fox-assets/Game-Related/fox_yoga_stretch.png',
   chef: '/fox-assets/Game-Related/fox_chef_cooking.png',
   vampire: '/fox-assets/Game-Related/fox_vampire_bite.png',
@@ -83,7 +84,9 @@ function detectFoxImage(game: any): FoxImageKey {
     return 'card_game';
   if (t.includes('tease') || t.includes('denial') || t.includes('edge') || t.includes('feather') || t.includes('tickle') || t.includes('necken') || t.includes('feder') || t.includes('kitzel'))
     return 'tease_denial';
-  if (t.includes('police') || t.includes('officer') || t.includes('arrest') || t.includes('polizei') || t.includes('verhaft') || t.includes('punish') || t.includes('spank') || t.includes('bestraf'))
+  if (t.includes('spank') || t.includes('spanking') || t.includes('bestrafen') || t.includes('klatschen') || t.includes('punishment') || t.includes('strafe'))
+    return 'spanking';
+  if (t.includes('police') || t.includes('officer') || t.includes('arrest') || t.includes('polizei') || t.includes('verhaft'))
     return 'costume_police';
   if (t.includes('teacher') || t.includes('lesson') || t.includes('lehrer') || t.includes('unterricht') || t.includes('school') || t.includes('schul'))
     return 'costume_teacher';
@@ -119,7 +122,7 @@ function detectFoxImage(game: any): FoxImageKey {
     'dice_game', 'worship', 'leash', 'massage', 'interrogation', 'tease_denial',
     'card_game', 'aftercare', 'ice_play', 'servant',
     'nurse', 'pirate', 'selfie', 'yoga', 'chef', 'vampire', 'dance', 'whisper', 'throne', 'pillow_fight',
-    'heavy_bondage', 'suspension', 'collar_crawl', 'wax_play',
+    'heavy_bondage', 'suspension', 'collar_crawl', 'wax_play', 'spanking',
   ];
   return allKeys[hash % allKeys.length];
 }

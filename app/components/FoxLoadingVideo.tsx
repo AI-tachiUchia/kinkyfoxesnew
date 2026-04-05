@@ -2,7 +2,11 @@
 import { useRef, useEffect, useState } from 'react';
 import { useLanguage } from '../context/LanguageContext';
 
-const VIDEO_SRC = '/fox-assets/Game-Related/Video_Animation_Request_and_Generation.mp4';
+const APPROVED_VIDEOS = [
+  '/fox-assets/Game-Related/fox-assets-approved/asset-videos/Domina_Fox_Punishing_SubFox.mp4',
+  '/fox-assets/Game-Related/fox-assets-approved/asset-videos/xai-video-054f3740-1e55-4b75-86be-229e675ac017.mp4',
+];
+const VIDEO_SRC = APPROVED_VIDEOS[Math.floor(Math.random() * APPROVED_VIDEOS.length)];
 
 const TIPS: Record<string, string[]> = {
   de: [

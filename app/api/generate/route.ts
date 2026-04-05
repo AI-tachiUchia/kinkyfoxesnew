@@ -34,7 +34,8 @@ CRITICAL RULES FOR EVERY GAME:
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { action, language = "de", currentGame, refinement, distance, customDistance, toys, vibe, template, heatLevel = 3 } = body;
+    // adminModel: optional override set by admin panel (requires NEXT_PUBLIC_ADMIN_SECRET in Vercel env vars)
+    const { action, language = "de", currentGame, refinement, distance, customDistance, toys, vibe, template, heatLevel = 3, adminModel } = body;
     const heatDescriptions: Record<number, string> = {
       1: "Soft & romantic — sensual teasing, intimate connection, gentle commands. No explicit sexual acts. Focus on anticipation, touch, eye contact, whispered words, slow exploration.",
       2: "Flirty & suggestive — light adult content, playful power dynamics, clothing comes off gradually. Suggestive dares, body worship, mild restraint. Teasing but no graphic acts.",
@@ -135,11 +136,25 @@ Output ONLY a JSON object:
 
     let text = "";
 
-    if (hasAnthropic) {
+    // Determine which model to use (admin override takes priority)
+    const isGeminiOverride = adminModel && (adminModel.startsWith("gemini") || adminModel.startsWith("gemini"));
+    const isClaudeOverride = adminModel && adminModel.startsWith("claude");
+
+    if (isGeminiOverride && hasGemini) {
+      // Admin forced Gemini model
+      const gemini = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+      const response = await gemini.models.generateContent({
+        model: adminModel,
+        contents: [{ role: "user", parts: [{ text: `${SYSTEM_PROMPT}\n\n---\n\n${prompt}` }] }],
+        config: { maxOutputTokens: 8192 },
+      });
+      text = response.text ?? "";
+    } else if (hasAnthropic && (!adminModel || isClaudeOverride)) {
       try {
         const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+        console.log("Using model:", isClaudeOverride ? adminModel : "claude-sonnet-4-6");
         const response = await anthropic.messages.create({
-          model: "claude-sonnet-4-6",
+          model: isClaudeOverride ? adminModel : "claude-sonnet-4-6",
           max_tokens: 8192,
           system: SYSTEM_PROMPT,
           messages: [{ role: "user", content: prompt }],
@@ -155,7 +170,7 @@ Output ONLY a JSON object:
     if (!text && hasGemini) {
       const gemini = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
       const response = await gemini.models.generateContent({
-        model: "gemini-3.1-pro-preview",
+        model: adminModel?.startsWith("gemini") ? adminModel : "gemini-3.1-pro-preview",
         contents: [{ role: "user", parts: [{ text: `${SYSTEM_PROMPT}\n\n---\n\n${prompt}` }] }],
         config: { maxOutputTokens: 8192 },
       });

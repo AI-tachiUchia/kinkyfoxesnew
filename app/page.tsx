@@ -113,6 +113,30 @@ function HomeContent({ session }: { session: any }) {
   const [refinementText, setRefinementText] = useState("");
   const [showRefineInput, setShowRefineInput] = useState(false);
 
+  // Admin panel
+  const adminSecret = process.env.NEXT_PUBLIC_ADMIN_SECRET;
+  const urlAdmin = searchParams.get('admin');
+  const isAdmin = !!adminSecret && urlAdmin === adminSecret;
+
+  useEffect(() => {
+    if (urlAdmin) {
+      console.log("Admin Check:", { 
+        param: urlAdmin, 
+        configured: adminSecret, 
+        match: urlAdmin === adminSecret 
+      });
+    }
+  }, [urlAdmin, adminSecret]);
+
+  const [adminModel, setAdminModel] = useState<string>(() => {
+    if (typeof window !== 'undefined') return localStorage.getItem('adminModel') || '';
+    return '';
+  });
+  const handleAdminModelChange = (model: string) => {
+    setAdminModel(model);
+    if (typeof window !== 'undefined') localStorage.setItem('adminModel', model);
+  };
+
   type ViewState = 'setup' | 'generating' | 'game';
   const [view, setView] = useState<ViewState>('setup');
   const [viewAnim, setViewAnim] = useState('');
@@ -418,7 +442,7 @@ function HomeContent({ session }: { session: any }) {
       const response = await fetch('/api/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: "generate", language, distance: randomDistance, customDistance: '', toys: [randomToys, partnerToys.map(t => t.name).join(', ')].filter(Boolean).join(', '), vibe: randomVibe, template: randomTemplate, heatLevel }),
+        body: JSON.stringify({ action: "generate", language, distance: randomDistance, customDistance: '', toys: [randomToys, partnerToys.map(t => t.name).join(', ')].filter(Boolean).join(', '), vibe: randomVibe, template: randomTemplate, heatLevel, adminModel: adminModel || undefined }),
       });
       if (!response.ok) throw new Error('Failed');
       const data = await response.json();
@@ -481,6 +505,7 @@ function HomeContent({ session }: { session: any }) {
           vibe,
           template,
           heatLevel,
+          adminModel: adminModel || undefined,
         }),
       });
 
@@ -513,7 +538,8 @@ function HomeContent({ session }: { session: any }) {
         body: JSON.stringify({
           action: "complicate",
           language,
-          currentGame: game
+          currentGame: game,
+          adminModel: adminModel || undefined,
         }),
       });
 
@@ -544,7 +570,8 @@ function HomeContent({ session }: { session: any }) {
           action: "refine",
           language,
           currentGame: game,
-          refinement: refinementText || undefined
+          refinement: refinementText || undefined,
+          adminModel: adminModel || undefined,
         }),
       });
 
@@ -1122,6 +1149,29 @@ function HomeContent({ session }: { session: any }) {
               </div>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Admin Panel */}
+      {isAdmin && (
+        <div className="fixed bottom-4 right-4 z-50 bg-[#1a1d23] border border-[#d97757]/40 rounded-xl p-4 shadow-2xl min-w-[220px]"
+          style={{ boxShadow: '0 4px 32px rgba(217,119,87,0.18), 0 0 1px rgba(217,119,87,0.4)' }}>
+          <p className="text-[10px] tracking-[0.2em] text-[#d97757] uppercase font-semibold mb-3">Admin Mode 🔧</p>
+          <label className="text-[10px] tracking-[0.15em] text-gray-400 uppercase font-medium block mb-1.5">Model Override</label>
+          <select
+            value={adminModel}
+            onChange={e => handleAdminModelChange(e.target.value)}
+            className="w-full bg-[#121418] border border-white/[0.12] rounded-lg px-3 py-2 text-gray-200 text-xs focus:outline-none focus:ring-1 focus:ring-[#d97757]/60 focus:border-[#d97757]/40 transition-all"
+          >
+            <option value="">— default —</option>
+            <option value="claude-haiku-4-5-20251001">claude-haiku-4-5</option>
+            <option value="claude-sonnet-4-6">claude-sonnet-4-6</option>
+            <option value="gemini-3.1-flash-preview">gemini-3.1-flash</option>
+            <option value="gemini-3.1-pro-preview">gemini-3.1-pro</option>
+          </select>
+          {adminModel && (
+            <p className="mt-2 text-[10px] text-[#d97757]/70 truncate">Active: {adminModel}</p>
+          )}
         </div>
       )}
     </main>

@@ -1,0 +1,215 @@
+import Anthropic from "@anthropic-ai/sdk";
+import { NextResponse } from "next/server";
+
+export async function POST(req: Request) {
+  try {
+    const body = await req.json();
+    const { action, language = "de", currentGame, refinement, distance, customDistance, toys, vibe, template, heatLevel = 3 } = body;
+    const heatDescriptions: Record<number, string> = {
+      1: "very soft and romantic — sensual teasing only, nothing explicitly sexual",
+      2: "mildly spicy — flirtatious and suggestive, light adult content",
+      3: "moderately kinky — clearly adult, some NSFW rules and escalation",
+      4: "quite intense — explicit, bold rules, significant power play, edginess or for example extra emberessing depending on scenario",
+      5: "maximum heat — no-holds-barred, as filthy and kinky as possible - ewww!",
+    };
+    const heatInstruction = `Heat level: ${heatLevel}/5 — ${heatDescriptions[heatLevel] ?? heatDescriptions[3]}. Calibrate ALL content and rule intensity to match this exactly.`;
+
+    const langInstruction = language === "de" 
+      ? "IMPORTANT: Generate the ENTIRE game (all titles, durations, and content) strictly in GERMAN language." 
+      : "IMPORTANT: Generate the ENTIRE game (all titles, durations, and content) strictly in ENGLISH language.";
+
+    const apiKey = process.env.ANTHROPIC_API_KEY;
+    if (!apiKey) {
+      return NextResponse.json({ error: "Missing API key" }, { status: 500 });
+    }
+
+    const client = new Anthropic({ apiKey });
+
+    let prompt = "";
+
+    if (action === "complicate") {
+      prompt = `
+        You are an expert game creator. I have a base game:
+        ${JSON.stringify(currentGame)}
+        
+        Make this more intense/complicated but it should still be playable. Make this game more complex, adding advanced rules, escalation steps, new toys if applicable, or a twist.
+        
+        ${langInstruction}
+        Output ONLY a JSON object with this exact structure:
+        {
+          "title": "A catchy title (can be the same or updated)",
+          "duration": "Estimated time (might be longer now)",
+          "sections": [
+            { "title": "Setup", "content": "Markdown string" },
+            { "title": "Advanced Rules", "content": "Markdown string" },
+            { "title": "Escalation / Twist", "content": "Markdown string" }
+          ]
+        }
+      `;
+    } else if (action === "refine") {
+      prompt = `
+        You are an expert game creator. I have a game:
+        ${JSON.stringify(currentGame)}
+        
+        Refine this. ${refinement ? `Feedback: "${refinement}"` : "Improve the current game a bit, make it more beter playable or/and write it more elegantly."}
+        Update the game to incorporate this feedback perfectly.
+        
+        ${langInstruction}
+        Output ONLY a JSON object with this exact structure:
+        {
+          "title": "Updated title if needed",
+          "duration": "Updated duration if needed",
+          "sections": [
+            { "title": "Section Title (e.g. Setup)", "content": "Markdown string" },
+            { "title": "Section Title (e.g. Rules)", "content": "Markdown string" }
+          ]
+        }
+      `;
+    } else {
+      const distanceText = distance === 'custom' ? customDistance : distance;
+      const templateText = template ? `\n        Game Template/Style: ${template} (please adapt the game strongly to this specific style)` : "";
+      prompt = `
+        You are an expert game creator for couples. Generate a custom NSFW game based on these parameters:
+        Distance/Setup: ${distanceText || "Not specified"}
+        Available Items/Toys: ${toys || "None"}
+        Vibe/Idea: ${vibe || "Surprise me"}${templateText}
+        ${heatInstruction}
+
+        Keep the initial game VERY simple, short, and easy to digest. Do not overwhelm with rules initially, but neither ignore them, since it has to be playable and fun.
+        
+        ${langInstruction}
+        Output ONLY a JSON object with this exact structure:
+        {
+          "title": "A catchy title for the game",
+          "duration": "Estimated time (e.g., 10-15 mins)",
+          "sections": [
+            { "title": "The Core Idea", "content": "Markdown string (1-2 paragraphs max)" },
+            { "title": "Basic Rules", "content": "Markdown string (very simple, few bullet points)" }
+          ]
+        }
+      `;
+    }
+
+    const message = await client.messages.create({
+      model: "claude-sonnet-4-6",
+      max_tokens: 2048,
+      messages: [{ role: "user", content: prompt }],
+    });
+
+  import Anthropic from "@anthropic-ai/sdk";
+import { NextResponse } from "next/server";
+
+export async function POST(req: Request) {
+  try {
+    const body = await req.json();
+    const { action, language = "de", currentGame, refinement, distance, customDistance, toys, vibe, template, heatLevel = 3 } = body;
+    const heatDescriptions: Record<number, string> = {
+      1: "very soft and romantic — sensual teasing only, nothing explicitly sexual",
+      2: "mildly spicy — flirtatious and suggestive, light adult content",
+      3: "moderately kinky — clearly adult, some NSFW rules and escalation",
+      4: "quite intense — explicit, bold rules, significant power play, edginess or for example extra emberessing depending on scenario",
+      5: "maximum heat — no-holds-barred, as filthy and kinky as possible - ewww!",
+    };
+    const heatInstruction = `Heat level: ${heatLevel}/5 — ${heatDescriptions[heatLevel] ?? heatDescriptions[3]}. Calibrate ALL content and rule intensity to match this exactly.`;
+
+    const langInstruction = language === "de" 
+      ? "IMPORTANT: Generate the ENTIRE game (all titles, durations, and content) strictly in GERMAN language." 
+      : "IMPORTANT: Generate the ENTIRE game (all titles, durations, and content) strictly in ENGLISH language.";
+
+    const apiKey = process.env.ANTHROPIC_API_KEY;
+    if (!apiKey) {
+      return NextResponse.json({ error: "Missing API key" }, { status: 500 });
+    }
+
+    const client = new Anthropic({ apiKey });
+
+    let prompt = "";
+
+    if (action === "complicate") {
+      prompt = `
+        You are an expert game creator. I have a base game:
+        ${JSON.stringify(currentGame)}
+        
+        Make this more intense/complicated but it should still be playable. Make this game more complex, adding advanced rules, escalation steps, new toys if applicable, or a twist.
+        
+        ${langInstruction}
+        Output ONLY a JSON object with this exact structure:
+        {
+          "title": "A catchy title (can be the same or updated)",
+          "duration": "Estimated time (might be longer now)",
+          "sections": [
+            { "title": "Setup", "content": "Markdown string" },
+            { "title": "Advanced Rules", "content": "Markdown string" },
+            { "title": "Escalation / Twist", "content": "Markdown string" }
+          ]
+        }
+      `;
+    } else if (action === "refine") {
+      prompt = `
+        You are an expert game creator. I have a game:
+        ${JSON.stringify(currentGame)}
+        
+        Refine this. ${refinement ? `Feedback: "${refinement}"` : "Improve the current game a bit, make it more beter playable or/and write it more elegantly."}
+        Update the game to incorporate this feedback perfectly.
+        
+        ${langInstruction}
+        Output ONLY a JSON object with this exact structure:
+        {
+          "title": "Updated title if needed",
+          "duration": "Updated duration if needed",
+          "sections": [
+            { "title": "Section Title (e.g. Setup)", "content": "Markdown string" },
+            { "title": "Section Title (e.g. Rules)", "content": "Markdown string" }
+          ]
+        }
+      `;
+    } else {
+      const distanceText = distance === 'custom' ? customDistance : distance;
+      const templateText = template ? `\n        Game Template/Style: ${template} (please adapt the game strongly to this specific style)` : "";
+      prompt = `
+        You are an expert game creator for couples. Generate a custom NSFW game based on these parameters:
+        Distance/Setup: ${distanceText || "Not specified"}
+        Available Items/Toys: ${toys || "None"}
+        Vibe/Idea: ${vibe || "Surprise me"}${templateText}
+        ${heatInstruction}
+
+        Keep the initial game VERY simple, short, and easy to digest. Do not overwhelm with rules initially, but neither ignore them, since it has to be playable and fun.
+        
+        ${langInstruction}
+        Output ONLY a JSON object with this exact structure:
+        {
+          "title": "A catchy title for the game",
+          "duration": "Estimated time (e.g., 10-15 mins)",
+          "sections": [
+            { "title": "The Core Idea", "content": "Markdown string (1-2 paragraphs max)" },
+            { "title": "Basic Rules", "content": "Markdown string (very simple, few bullet points)" }
+          ]
+        }
+      `;
+    }
+
+    const message = await client.messages.create({
+      model: "claude-sonnet-4-6",
+      max_tokens: 2048,
+      messages: [{ role: "user", content: prompt }],
+    });
+
+    const text = (message.content[0] as any).text;
+    const cleanJsonText = text.replace(/```json\n?/, '').replace(/```\n?/, '').trim();
+    const parsedData = JSON.parse(cleanJsonText);
+
+    return NextResponse.json(parsedData);
+  } catch (error: any) {
+    console.error("Error generating game:", error);
+    return NextResponse.json({ error: "Failed to generate game. " + error.message }, { status: 500 });
+  }
+	```typescript
+	// Add this right before your JSON.parse()
+	console.log("RAW GENERATED STRING:", yourGeneratedVariable);
+
+   try {
+  	const parsedData = JSON.parse(yourGeneratedVariable);
+	} catch (error) {
+ 	 console.error("Failed to parse. The bad string was:", yourGeneratedVariable);
+	}
+}
