@@ -19,6 +19,27 @@ GAME DESIGN TOOLKIT — draw from these mechanics as appropriate:
 - **Psychological play**: Anticipation building, whispered commands, eye contact challenges, confession/vulnerability prompts, praise/degradation (calibrated to heat level)
 - **Props & environment**: Creative use of household items, furniture, ice, food, mirrors, phone/camera (if consented)
 
+DICE ROLL FORMAT — Use this when a game mechanic involves random selection from options:
+When a section has a list of options where the player should randomly pick ONE (punishments, dares, positions, challenges, etc.), format it as a dice roll block instead of listing all options visibly. This creates suspense — the player clicks a button to reveal their fate.
+
+Format (embed directly in the section's markdown content):
+:::dice{label="Description of what you're rolling for..."}
+- Option 1
+- Option 2
+- Option 3
+- Option 4
+- Option 5
+- Option 6
+:::
+
+Rules for dice rolls:
+- Use ONLY when there are 3+ options and the game mechanic calls for random selection
+- The label should be atmospheric and fit the game's tone (e.g., "Würfle für deine Strafe..." or "Roll for your next dare...")
+- Provide 4-8 options per dice roll — enough variety but not overwhelming
+- You can have multiple dice rolls in one section if the game structure demands it
+- Do NOT use dice rolls for sequential steps — only for randomized picks
+- Surrounding text/rules should be normal markdown, only the randomized options go in :::dice blocks
+
 CRITICAL RULES FOR EVERY GAME:
 1. **Be specific and concrete.** Never say "dare each other to do things" — write out the actual dares. Never say "take turns challenging each other" — write the specific challenges with options.
 2. **Pre-generate all content.** If the game has rounds, write what happens in each round. If it has challenges, list them. If it has cards/prompts, provide them — at least 8-12 items. Players should be able to play immediately without inventing anything.

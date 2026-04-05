@@ -11,6 +11,8 @@ import FoxImage, { detectFoxImage, FOX_IMAGES } from "./components/FoxImage";
 import FoxLoadingVideo from "./components/FoxLoadingVideo";
 import GameMasterSetup from "./components/GameMasterSetup";
 import ClassicSetup from "./components/ClassicSetup";
+import PartnerStatus from "./components/PartnerStatus";
+import DiceRoll, { parseDiceRolls } from "./components/DiceRoll";
 
 function Auth() {
   const { language, setLanguage } = useLanguage();
@@ -258,11 +260,11 @@ function HomeContent({ session }: { session: any }) {
       })
       .on('presence', { event: 'join' }, ({ newPresences }: any) => {
         const partner = newPresences.find((p: any) => p.user_id !== session?.user?.id || 'anonymous');
-        if (partner) addToast(`${partner.display_name} joined the session`);
+        if (partner) addToast(`🦊 ${partner.display_name} ist der Session beigetreten!`);
       })
       .on('presence', { event: 'leave' }, ({ leftPresences }: any) => {
         const partner = leftPresences.find((p: any) => p.user_id !== session?.user?.id || 'anonymous');
-        if (partner) addToast(`${partner.display_name} left the session`);
+        if (partner) addToast(`${partner.display_name} hat die Session verlassen`);
       })
       .subscribe(async (status) => {
         if (status === 'SUBSCRIBED') {
@@ -312,11 +314,9 @@ function HomeContent({ session }: { session: any }) {
     }
   };
 
-  const handleCopyLink = () => {
-    if (typeof window !== "undefined") {
-      navigator.clipboard.writeText(window.location.href);
-      addToast("Partner link copied to clipboard!");
-    }
+  const getRoomUrl = () => {
+    if (typeof window !== 'undefined') return window.location.href;
+    return '';
   };
 
   const handleChange = (setter: any, field: string) => (e: any) => {
@@ -727,26 +727,40 @@ function HomeContent({ session }: { session: any }) {
     <main className="min-h-screen bg-[#121418] relative overflow-hidden font-sans">
       {/* Global nav */}
       
-      <div className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-6 py-4">
-        <div className="flex gap-4 items-center">
-          {view !== 'setup' && (
-            <button onClick={handleBackToSetup}
-              className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors group">
-              <svg className="w-5 h-5 transform group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-              </svg>
-              <span className="text-xs tracking-widest uppercase">{t.nav.settings}</span>
-            </button>
-          )}
-          <div className="flex bg-[#121418] border border-white/[0.08] rounded-full p-1">
-            <button onClick={() => setLanguage('de')} className={`text-[10px] tracking-widest uppercase px-3 py-1 rounded-full transition-all ${language === 'de' ? 'bg-[#d97757] text-[#121418] font-bold' : 'text-gray-500 hover:text-gray-300'}`}>DE</button>
-            <button onClick={() => setLanguage('en')} className={`text-[10px] tracking-widest uppercase px-3 py-1 rounded-full transition-all ${language === 'en' ? 'bg-[#d97757] text-[#121418] font-bold' : 'text-gray-500 hover:text-gray-300'}`}>EN</button>
+      <div className="fixed top-0 left-0 right-0 z-50 px-4 sm:px-6 py-3">
+        <div className="flex items-center justify-between">
+          {/* Left: Back button + Language */}
+          <div className="flex gap-3 items-center">
+            {view !== 'setup' && (
+              <button onClick={handleBackToSetup}
+                className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors group">
+                <svg className="w-5 h-5 transform group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                </svg>
+                <span className="text-xs tracking-widest uppercase">{t.nav.settings}</span>
+              </button>
+            )}
+            <div className="flex bg-[#121418] border border-white/[0.08] rounded-full p-1">
+              <button onClick={() => setLanguage('de')} className={`text-[10px] tracking-widest uppercase px-3 py-1 rounded-full transition-all ${language === 'de' ? 'bg-[#d97757] text-[#121418] font-bold' : 'text-gray-500 hover:text-gray-300'}`}>DE</button>
+              <button onClick={() => setLanguage('en')} className={`text-[10px] tracking-widest uppercase px-3 py-1 rounded-full transition-all ${language === 'en' ? 'bg-[#d97757] text-[#121418] font-bold' : 'text-gray-500 hover:text-gray-300'}`}>EN</button>
+            </div>
           </div>
+
+          {/* Center: Partner Status */}
+          <PartnerStatus
+            partnerOnline={partnerOnline}
+            partnerName={partnerName}
+            partnerActivity={partnerActivity}
+            roomId={roomId}
+            roomUrl={getRoomUrl()}
+          />
+
+          {/* Right: Sign Out */}
+          <button onClick={() => supabase.auth.signOut()}
+            className="text-xs text-gray-500 hover:text-gray-300 transition-colors tracking-widest uppercase">
+            {t.nav.signOut}
+          </button>
         </div>
-        <button onClick={() => supabase.auth.signOut()}
-          className="text-xs text-gray-500 hover:text-gray-300 transition-colors tracking-widest uppercase">
-          {t.nav.signOut}
-        </button>
       </div>
 
       {/* Ambient background */}
@@ -764,13 +778,6 @@ function HomeContent({ session }: { session: any }) {
                 <h1 className="text-4xl md:text-5xl font-light tracking-wide text-transparent bg-clip-text bg-gradient-to-r from-gray-200 via-gray-300 to-[#d97757] font-serif">
                   Kinky Fox
                 </h1>
-                {roomId && (
-                  <button onClick={handleCopyLink}
-                    className="text-xs tracking-widest uppercase text-[#d97757] bg-[#d97757]/20 hover:bg-[#d97757]/30 px-4 py-2 rounded-full border border-[#d97757]/40 transition-all flex items-center gap-2" style={{ boxShadow: '0 2px 12px rgba(217,119,87,0.15)' }}>
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
-                    {t.nav.copyLink}
-                  </button>
-                )}
               </div>
               <p className="text-gray-400 text-sm tracking-widest uppercase font-light">{t.login.heroSubtitle}</p>
             </div>
@@ -904,9 +911,17 @@ function HomeContent({ session }: { session: any }) {
                 <div className="px-6 pb-5 pt-3 space-y-3">
                   <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-3">
                     <h2 className="text-2xl md:text-3xl font-light text-gray-100 font-serif leading-tight">{game.title}</h2>
-                    <span className="shrink-0 text-[10px] tracking-widest uppercase text-[#d97757] bg-[#d97757]/10 px-4 py-1.5 rounded-full border border-[#d97757]/20 font-medium">
-                      {game.duration}
-                    </span>
+                    <div className="flex items-center gap-2.5 shrink-0">
+                      {partnerOnline && (
+                        <span className="text-[10px] tracking-widest uppercase text-green-400/80 bg-green-400/10 px-3 py-1.5 rounded-full border border-green-400/20 font-medium flex items-center gap-1.5">
+                          <span className="w-1.5 h-1.5 rounded-full bg-green-400 inline-block" />
+                          🦊🦊 {language === 'de' ? 'Zusammen' : 'Together'}
+                        </span>
+                      )}
+                      <span className="text-[10px] tracking-widest uppercase text-[#d97757] bg-[#d97757]/10 px-4 py-1.5 rounded-full border border-[#d97757]/20 font-medium">
+                        {game.duration}
+                      </span>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -980,7 +995,16 @@ function HomeContent({ session }: { session: any }) {
                                       </div>
                                     ) : null;
                                   })()}
-                                  <ReactMarkdown components={markdownComponents}>{section.content}</ReactMarkdown>
+                                  {(() => {
+                                    const { segments } = parseDiceRolls(section.content);
+                                    return segments.map((seg, segIdx) => 
+                                      seg.type === 'dice' ? (
+                                        <DiceRoll key={`dice-${idx}-${segIdx}`} label={seg.label} options={seg.options} />
+                                      ) : (
+                                        <ReactMarkdown key={`md-${idx}-${segIdx}`} components={markdownComponents}>{seg.content}</ReactMarkdown>
+                                      )
+                                    );
+                                  })()}
                                 </div>
                               </div>
                             )}
@@ -991,7 +1015,16 @@ function HomeContent({ session }: { session: any }) {
                   </div>
                 ) : (
                   <div className="text-gray-300 float-up-d1 bg-[#1e2126]/60 backdrop-blur-md border border-white/[0.06] rounded-2xl p-6">
-                    <ReactMarkdown components={markdownComponents}>{game.description || ''}</ReactMarkdown>
+                    {(() => {
+                      const { segments } = parseDiceRolls(game.description || '');
+                      return segments.map((seg, segIdx) => 
+                        seg.type === 'dice' ? (
+                          <DiceRoll key={`dice-desc-${segIdx}`} label={seg.label} options={seg.options} />
+                        ) : (
+                          <ReactMarkdown key={`md-desc-${segIdx}`} components={markdownComponents}>{seg.content}</ReactMarkdown>
+                        )
+                      );
+                    })()}
                   </div>
                 )}
               </div>
@@ -1054,6 +1087,17 @@ function HomeContent({ session }: { session: any }) {
           </div>
         </div>
       )}
+
+      {/* Toast notifications */}
+      <div className="fixed top-20 left-1/2 -translate-x-1/2 z-[60] flex flex-col items-center gap-2 pointer-events-none">
+        {toasts.map(toast => (
+          <div key={toast.id}
+            className="animate-fade-in bg-[#1a1d23]/95 backdrop-blur-md border border-white/[0.1] rounded-xl px-5 py-3 shadow-2xl text-sm text-gray-200 pointer-events-auto"
+            style={{ boxShadow: '0 4px 20px rgba(0,0,0,0.4), 0 0 1px rgba(217,119,87,0.2)' }}>
+            {toast.message}
+          </div>
+        ))}
+      </div>
 
       {/* Admin Panel */}
       {isAdmin && (
