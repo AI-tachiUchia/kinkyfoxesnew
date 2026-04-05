@@ -1074,11 +1074,13 @@ function HomeContent({ session }: { session: any }) {
                                   {(() => {
                                     const sectionKey = detectFoxImage({ title: section.title, content: section.content });
                                     return sectionKey !== 'default' ? (
-                                      <img
-                                        src={FOX_IMAGES[sectionKey]}
-                                        alt=""
-                                        className="float-right ml-3 mb-2 w-20 h-20 object-contain opacity-80 drop-shadow-md"
-                                      />
+                                      <div className="float-right ml-5 mb-4 p-2 bg-[#121418] border border-white/[0.08] rounded-xl overflow-hidden shadow-xl" style={{ width: '130px', height: '130px' }}>
+                                        <img
+                                          src={FOX_IMAGES[sectionKey]}
+                                          alt=""
+                                          className={`w-full h-full object-center opacity-90 transition-opacity hover:opacity-100 ${FOX_IMAGES[sectionKey].includes('fox_pixel_') ? 'object-contain object-bottom' : 'object-cover rounded-lg'}`}
+                                        />
+                                      </div>
                                     ) : null;
                                   })()}
                                   <ReactMarkdown components={markdownComponents}>{section.content}</ReactMarkdown>

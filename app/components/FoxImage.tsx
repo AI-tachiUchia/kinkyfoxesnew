@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 type FoxImageKey =
   | 'blindfold' | 'bondage' | 'bdsm_outfit' | 'costume_police' | 'costume_teacher' | 'costume_stewardess' | 'sexy_fotos'
   | 'dice_game' | 'worship' | 'leash' | 'massage' | 'interrogation' | 'tease_denial'
-  | 'card_game' | 'aftercare' | 'ice_play' | 'servant'
+  | 'card_game' | 'aftercare' | 'servant'
   | 'nurse' | 'pirate' | 'selfie' | 'yoga' | 'chef' | 'vampire' | 'dance' | 'whisper' | 'throne' | 'pillow_fight'
   | 'heavy_bondage' | 'suspension' | 'collar_crawl' | 'wax_play' | 'spanking'
   | 'default';
@@ -25,7 +25,6 @@ const FOX_IMAGES: Record<FoxImageKey, string> = {
   tease_denial: '/fox-assets/Game-Related/fox_tease_denial.png',
   card_game: '/fox-assets/Game-Related/fox_card_game.png',
   aftercare: '/fox-assets/Game-Related/fox_aftercare_cuddle.png',
-  ice_play: '/fox-assets/Game-Related/fox_ice_temperature.png',
   servant: '/fox-assets/Game-Related/fox_servant_master.png',
   nurse: '/fox-assets/Game-Related/fox-assets-approved/fox_nurse_sub_male_female_dom_roleplay.jpeg',
   pirate: '/fox-assets/Game-Related/fox_pirate_captive.png',
@@ -56,8 +55,6 @@ function detectFoxImage(game: any): FoxImageKey {
     return 'wax_play';
   if (t.includes('massage') || t.includes('sensory') || t.includes('sinne'))
     return 'massage';
-  if (t.includes('ice') || t.includes('temperature') || t.includes('eis') || t.includes('temperatur') || t.includes('cold') || t.includes('kalt') || t.includes('hot') || t.includes('heiß'))
-    return 'ice_play';
   if (t.includes('interrogat') || t.includes('detective') || t.includes('verhör') || t.includes('detektiv') || t.includes('spy') || t.includes('spion'))
     return 'interrogation';
   if (t.includes('maid') || t.includes('butler') || t.includes('servant') || t.includes('serve') || t.includes('dien') || t.includes('bedien') || t.includes('magd'))
@@ -120,7 +117,7 @@ function detectFoxImage(game: any): FoxImageKey {
   const allKeys: FoxImageKey[] = [
     'bdsm_outfit', 'costume_police', 'costume_teacher', 'costume_stewardess', 'sexy_fotos',
     'dice_game', 'worship', 'leash', 'massage', 'interrogation', 'tease_denial',
-    'card_game', 'aftercare', 'ice_play', 'servant',
+    'card_game', 'aftercare', 'servant',
     'nurse', 'pirate', 'selfie', 'yoga', 'chef', 'vampire', 'dance', 'whisper', 'throne', 'pillow_fight',
     'heavy_bondage', 'suspension', 'collar_crawl', 'wax_play', 'spanking',
   ];
