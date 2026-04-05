@@ -442,7 +442,7 @@ function HomeContent({ session }: { session: any }) {
   };
 
   const handleSurprise = async () => {
-    const distances = ['same-room', 'tied-up', 'long-distance', 'public'];
+    const distances = ['same-room', 'tonight', 'virtual'];
     const vibes = ['slow tease', 'intense and commanding', 'playful and silly', 'sensory deprivation', 'power play', 'romantic and tender', 'competitive', 'confessional'];
     const templates = ['', 'Classic Truth or Dare', 'Roleplay Scenario', 'Tease & Denial', 'Sensory Deprivation', 'Punishment & Reward'];
     const randomDistance = distances[Math.floor(Math.random() * distances.length)];
@@ -785,9 +785,8 @@ function HomeContent({ session }: { session: any }) {
                 <select className={inputCls} value={distance} onChange={handleChange(setDistance, 'distance')}>
                   <option value="" disabled>{t.login.selectSetup}</option>
                   <option value="same-room">{t.login.optSameRoom}</option>
-                  <option value="tied-up">{t.login.optRestrained}</option>
-                  <option value="long-distance">{t.login.optLongDistance}</option>
-                  <option value="public">{t.login.optPublic}</option>
+                  <option value="tonight">{t.login.optTonight}</option>
+                  <option value="virtual">{t.login.optVirtual}</option>
                   <option value="custom">{t.login.optCustom}</option>
                 </select>
                 {distance === 'custom' && (
