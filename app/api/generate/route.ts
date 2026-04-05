@@ -138,7 +138,7 @@ Output ONLY a JSON object:
 
     // Determine which model to use (admin override takes priority)
     const isGeminiOverride = adminModel && adminModel.startsWith("gemini");
-    const isClaudeOverride = adminModel && adminModel.startsWith("claude");
+    const isClaudeOverride = adminModel && (adminModel.startsWith("claude") || adminModel.startsWith("opus"));
 
     // If no admin model is set, default to Gemini if available (as requested by user)
     const useGemini = isGeminiOverride || (!adminModel && hasGemini);

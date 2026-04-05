@@ -1172,6 +1172,7 @@ function HomeContent({ session }: { session: any }) {
             <option value="">— default —</option>
             <option value="claude-haiku-4-5-20251001">claude-haiku-4-5</option>
             <option value="claude-sonnet-4-6">claude-sonnet-4-6</option>
+            <option value="opus4.6">opus4.6</option>
             <option value="gemini-2.0-flash-exp">gemini-2.0-flash</option>
             <option value="gemini-3.1-flash-preview">gemini-3.1-flash</option>
             <option value="gemini-3.1-pro-preview">gemini-3.1-pro</option>
