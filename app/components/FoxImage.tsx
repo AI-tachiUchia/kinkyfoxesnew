@@ -174,6 +174,10 @@ export default function FoxImage({ game, className = '', overlay }: Props) {
         className={`absolute inset-0 w-full h-full transition-all duration-700 ease-out ${
           loaded ? 'opacity-100 scale-100' : 'opacity-0 scale-[1.03]'
         } ${isPixelArt ? 'object-contain object-bottom p-4' : 'object-cover object-center'}`}
+        style={{
+          maskImage: isPixelArt ? 'none' : 'linear-gradient(to bottom, rgba(0,0,0,1) 60%, rgba(0,0,0,0) 95%)',
+          WebkitMaskImage: isPixelArt ? 'none' : 'linear-gradient(to bottom, rgba(0,0,0,1) 60%, rgba(0,0,0,0) 95%)'
+        }}
       />
 
       {/* Bottom fade — blends into card bg */}
@@ -182,9 +186,9 @@ export default function FoxImage({ game, className = '', overlay }: Props) {
       {/* Top subtle fade */}
       <div className="absolute inset-x-0 top-0 h-12 z-10 bg-gradient-to-b from-[#1a1d23]/50 to-transparent" />
 
-      {/* Side vignettes */}
-      <div className="absolute inset-0 z-10 pointer-events-none"
-        style={{ boxShadow: 'inset 0 0 60px 20px rgba(26,29,35,0.5)' }} />
+      {/* Side vignettes (stronger for non-pixel art to hide square edges) */}
+      <div className={`absolute inset-0 z-10 pointer-events-none transition-all duration-700 ${isPixelArt ? 'opacity-50' : 'opacity-100'}`}
+        style={{ boxShadow: isPixelArt ? 'inset 0 0 60px 20px rgba(26,29,35,0.5)' : 'inset 0 0 100px 45px #16181e' }} />
 
       {/* Warm ambient glow at bottom */}
       <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-3/4 h-20 z-10 pointer-events-none"

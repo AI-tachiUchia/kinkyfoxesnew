@@ -161,9 +161,10 @@ type Props = {
   isGenerating: boolean;
   game: any;
   heatLevel: number;
+  setupText?: string;
 };
 
-export default function FoxDisplay({ isGenerating, game, heatLevel }: Props) {
+export default function FoxDisplay({ isGenerating, game, heatLevel, setupText = '' }: Props) {
   const { language } = useLanguage();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const rafRef = useRef(0);
@@ -175,9 +176,13 @@ export default function FoxDisplay({ isGenerating, game, heatLevel }: Props) {
   const imgLoaded = useRef(false);
   const currentSrc = useRef('');
 
-  const scene = isGenerating ? 'idle' : detectScene(game);
-  const foxKey = isGenerating ? 'default' : detectFoxImage(game);
+  // If game is null but we have setupText, we use it to dynamically show the image
+  const pseudoGame = game || (setupText.trim() ? { title: 'Setup', content: setupText } : null);
+
+  const scene = isGenerating ? 'idle' : detectScene(pseudoGame);
+  const foxKey = isGenerating ? 'default' : detectFoxImage(pseudoGame);
   const foxSrc = FOX_IMAGES[foxKey];
+  const isPixelArt = foxSrc.includes('fox_pixel_');
   const dialogue = isGenerating ? getDialogue('generating' as SceneKey, language) : getDialogue(scene, language, game?.title);
 
   // Load fox image
@@ -263,13 +268,17 @@ export default function FoxDisplay({ isGenerating, game, heatLevel }: Props) {
     <div className="w-full relative select-none">
       {/* Fox character image — floating, no bounding box */}
       <div className="relative w-full flex items-center justify-center" style={{ maxHeight: '180px', overflow: 'hidden' }}>
+        {/* For full illustrations, add an inset shadow mask to hide the hard edges */}
+        <div className="absolute inset-0 z-20 pointer-events-none" style={{
+          boxShadow: isPixelArt ? 'none' : 'inset 0 0 40px 20px #121418',
+        }} />
         <img
           src={foxSrc}
           alt=""
           width={512}
           height={492}
-          className="w-auto h-full object-contain drop-shadow-[0_8px_24px_rgba(217,119,87,0.12)]"
-          style={{ maxHeight: '180px' }}
+          className={`w-auto h-full object-contain drop-shadow-[0_8px_24px_rgba(217,119,87,0.12)] transition-all duration-700`}
+          style={{ maxHeight: '180px', maskImage: isPixelArt ? 'none' : 'radial-gradient(ellipse at center, rgba(0,0,0,1) 40%, rgba(0,0,0,0) 70%)', WebkitMaskImage: isPixelArt ? 'none' : 'radial-gradient(ellipse at center, rgba(0,0,0,1) 50%, rgba(0,0,0,0) 80%)' }}
         />
 
         {/* Particle canvas overlay */}

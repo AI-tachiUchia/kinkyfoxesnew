@@ -750,7 +750,7 @@ function HomeContent({ session }: { session: any }) {
 
             {/* Fox display */}
             <div className="w-full max-w-sm">
-              <FoxDisplay isGenerating={isGenerating} game={game} heatLevel={heatLevel} />
+              <FoxDisplay isGenerating={isGenerating} game={game} heatLevel={heatLevel} setupText={`${vibe} ${toys} ${distance === 'custom' ? customDistance : distance}`} />
             </div>
 
             {/* Config card */}

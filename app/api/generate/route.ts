@@ -140,40 +140,45 @@ Output ONLY a JSON object:
     const isGeminiOverride = adminModel && adminModel.startsWith("gemini");
     const isClaudeOverride = adminModel && adminModel.startsWith("claude");
 
-    if (isGeminiOverride && hasGemini) {
-      // Admin forced Gemini model
+    // If no admin model is set, default to Gemini if available (as requested by user)
+    const useGemini = isGeminiOverride || (!adminModel && hasGemini);
+    const useClaude = isClaudeOverride || (!useGemini && hasAnthropic);
+
+    if (useGemini) {
+      // Use Gemini model
+      const modelToUse = adminModel?.startsWith("gemini") ? adminModel : "gemini-3.1-pro-preview";
       try {
-        console.log("Admin Override: Using Gemini with model:", adminModel);
+        console.log("Using Gemini with model:", modelToUse);
         const gemini = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
         const response = await gemini.models.generateContent({
-          model: adminModel,
+          model: modelToUse,
           contents: [{ role: "user", parts: [{ text: `${SYSTEM_PROMPT}\n\n---\n\n${prompt}` }] }],
           config: { maxOutputTokens: 8192 },
         });
         text = response.text ?? "";
         console.log("Gemini Success!");
       } catch (err: any) {
-        console.error("Gemini override failed:", err.message);
-        // If it was a model not found error, we might want to try a safer name
+        console.error("Gemini failed:", err.message);
         if (err.message.includes("not found") || err.message.includes("404")) {
-           console.warn("Model not found, trying legacy names...");
+           console.warn("Model not found.");
         }
         
-        // Fallback to Pro if Flash failed
-        if (adminModel !== "gemini-3.1-pro-preview") {
-          console.log("Falling back from Flash to Pro...");
-          const gemini = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-          const response = await gemini.models.generateContent({
-            model: "gemini-3.1-pro-preview",
-            contents: [{ role: "user", parts: [{ text: `${SYSTEM_PROMPT}\n\n---\n\n${prompt}` }] }],
-            config: { maxOutputTokens: 8192 },
+        // Fallback to Anthropic if Gemini fails and Anthropic is available
+        if (hasAnthropic) {
+          console.log("Falling back from Gemini to Anthropic...");
+          const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+          const response = await anthropic.messages.create({
+            model: "claude-sonnet-4-6",
+            max_tokens: 8192,
+            system: SYSTEM_PROMPT,
+            messages: [{ role: "user", content: prompt }],
           });
-          text = response.text ?? "";
+          text = response.content[0].type === "text" ? response.content[0].text : "";
         } else {
           throw err;
         }
       }
-    } else if (hasAnthropic && (!adminModel || isClaudeOverride)) {
+    } else if (useClaude) {
       const modelToUse = isClaudeOverride ? adminModel : "claude-sonnet-4-6";
       try {
         console.log("Attempting Anthropic with model:", modelToUse);
@@ -204,6 +209,7 @@ Output ONLY a JSON object:
     }
 
     if (!text && hasGemini) {
+      console.log("Empty text, running final fallback with Gemini...");
       const gemini = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
       const response = await gemini.models.generateContent({
         model: "gemini-3.1-pro-preview",
