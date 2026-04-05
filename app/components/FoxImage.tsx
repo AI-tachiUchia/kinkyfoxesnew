@@ -154,7 +154,7 @@ export default function FoxImage({ game, className = '', overlay }: Props) {
 
   return (
     <div ref={containerRef} className={`relative overflow-hidden ${className}`}
-      style={{ background: isPixelArt ? '#16181e' : '#f5f0eb' }}>
+      style={{ background: '#16181e' }}>
 
       {/* Previous image crossfade */}
       {prevSrc && (
@@ -170,7 +170,7 @@ export default function FoxImage({ game, className = '', overlay }: Props) {
         onLoad={handleLoad}
         className={`absolute inset-0 w-full h-full transition-all duration-700 ease-out ${
           loaded ? 'opacity-100 scale-100' : 'opacity-0 scale-[1.03]'
-        } ${isPixelArt ? 'object-contain object-bottom p-4' : 'object-contain object-center'}`}
+        } ${isPixelArt ? 'object-contain object-bottom p-4' : 'object-cover object-center'}`}
       />
 
       {/* Bottom fade — blends into card bg */}
