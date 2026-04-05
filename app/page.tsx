@@ -861,7 +861,7 @@ function HomeContent({ session }: { session: any }) {
 
               <div className="space-y-3">
                 <label className={labelCls}>{t.login.atmosphereLabel}</label>
-                <textarea placeholder="e.g., slow tease, intense, sensory deprivation..."
+                <textarea placeholder={t.login.atmospherePlaceholder || "Z.B. 'Romantisch und langsam', 'Bestrafend', 'Verspielt'..."}
                   className={`${inputCls} h-28 resize-none`}
                   style={{ padding: '18px 20px' }}
                   value={vibe} onChange={handleChange(setVibe, 'vibe')} />
@@ -873,6 +873,10 @@ function HomeContent({ session }: { session: any }) {
                   <option value="">{t.login.tplNone}</option>
                   <option value="Classic Truth or Dare">{t.login.tplTruthDare}</option>
                   <option value="Roleplay Scenario">{t.login.tplRoleplay}</option>
+                  <option value="Maid Roleplay">{t.login.tplMaid}</option>
+                  <option value="Police Roleplay">{t.login.tplPolice}</option>
+                  <option value="Stewardess Roleplay">{t.login.tplStewardess}</option>
+                  <option value="King and Slave Roleplay">{t.login.tplKingSlave}</option>
                   <option value="Tease & Denial">{t.login.tplTeaseDenial}</option>
                   <option value="Sensory Deprivation">{t.login.tplSensory}</option>
                   <option value="Punishment & Reward">{t.login.tplPunishment}</option>
