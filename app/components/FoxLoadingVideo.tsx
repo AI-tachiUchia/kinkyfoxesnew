@@ -94,6 +94,7 @@ export default function FoxLoadingVideo() {
           loop
           muted
           playsInline
+          preload="none"
           onCanPlay={() => setVideoReady(true)}
           className="w-full block"
         />
