@@ -6,7 +6,6 @@ const APPROVED_VIDEOS = [
   '/fox-assets/Game-Related/fox-assets-approved/asset-videos/Domina_Fox_Punishing_SubFox.mp4',
   '/fox-assets/Game-Related/fox-assets-approved/asset-videos/xai-video-054f3740-1e55-4b75-86be-229e675ac017.mp4',
 ];
-const VIDEO_SRC = APPROVED_VIDEOS[Math.floor(Math.random() * APPROVED_VIDEOS.length)];
 
 const TIPS: Record<string, string[]> = {
   de: [
@@ -48,6 +47,12 @@ export default function FoxLoadingVideo() {
   const [fade, setFade] = useState(true);
   const [videoReady, setVideoReady] = useState(false);
   const [elapsed, setElapsed] = useState(0);
+  const [videoSrc, setVideoSrc] = useState<string | null>(null);
+
+  // Pick video only on client to avoid hydration mismatch and start loading late
+  useEffect(() => {
+    setVideoSrc(APPROVED_VIDEOS[Math.floor(Math.random() * APPROVED_VIDEOS.length)]);
+  }, []);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -63,12 +68,6 @@ export default function FoxLoadingVideo() {
   useEffect(() => {
     const t = setInterval(() => setElapsed(e => e + 1), 1000);
     return () => clearInterval(t);
-  }, []);
-
-  useEffect(() => {
-    if (videoRef.current) {
-      videoRef.current.play().catch(() => {});
-    }
   }, []);
 
   return (
@@ -88,15 +87,19 @@ export default function FoxLoadingVideo() {
           background: 'linear-gradient(90deg, transparent, rgba(217,119,87,0.4), transparent)',
         }} />
 
-        <video
-          ref={videoRef}
-          src={VIDEO_SRC}
-          loop
-          muted
-          playsInline
-          onCanPlay={() => setVideoReady(true)}
-          className="w-full block"
-        />
+        {videoSrc && (
+          <video
+            ref={videoRef}
+            src={videoSrc}
+            loop
+            muted
+            autoPlay
+            playsInline
+            preload="metadata"
+            onCanPlay={() => setVideoReady(true)}
+            className="w-full block"
+          />
+        )}
 
         {/* Bottom gradient */}
         <div className="absolute bottom-0 inset-x-0 h-24 z-10 bg-gradient-to-t from-[#121418] via-[#121418]/80 to-transparent" />
