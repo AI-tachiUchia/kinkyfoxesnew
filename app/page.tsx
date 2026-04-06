@@ -1117,6 +1117,8 @@ function HomeContent({ session }: { session: any }) {
             <option value="gemini-2.0-flash-exp">gemini-2.0-flash</option>
             <option value="gemini-3.1-flash-preview">gemini-3.1-flash</option>
             <option value="gemini-3.1-pro-preview">gemini-3.1-pro</option>
+            <option value="grok">grok</option>
+            <option value="grok-fast">grok-fast</option>
           </select>
           {adminModel && (
             <p className="mt-2 text-[10px] text-[#d97757]/70 truncate">Active: {adminModel}</p>

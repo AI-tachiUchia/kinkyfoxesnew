@@ -158,16 +158,44 @@ Output ONLY a JSON object:
     let text = "";
 
     // Determine which model to use (admin override takes priority)
-    const isGeminiOverride = adminModel && adminModel.startsWith("gemini");
-    const isClaudeOverride = adminModel && (adminModel.startsWith("claude") || adminModel.startsWith("opus"));
+    const isGeminiOverride = adminModel && (adminModel.startsWith("gemini") || adminModel.startsWith("google"));
+    const isClaudeOverride = adminModel && (adminModel.startsWith("claude") || adminModel.startsWith("opus") || adminModel.startsWith("anthropic"));
+    const isXAIOverride = adminModel && (adminModel.startsWith("grok") || adminModel.startsWith("xai"));
 
     // If no admin model is set, default to Gemini if available (as requested by user)
-    const useGemini = isGeminiOverride || (!adminModel && hasGemini);
-    const useClaude = isClaudeOverride || (!useGemini && hasAnthropic);
+    const useGemini = isGeminiOverride || (!adminModel && !isXAIOverride && hasGemini);
+    const useClaude = isClaudeOverride || (!useGemini && !isXAIOverride && hasAnthropic);
+    const useXAI = isXAIOverride;
 
-    if (useGemini) {
+    if (useXAI) {
+      try {
+        const modelToUse = adminModel?.includes('/') ? adminModel : (adminModel === 'grok' ? 'grok-4.20-0309-reasoning' : 'grok-4-1-fast-reasoning');
+        console.log("Using xAI with model:", modelToUse);
+        // xAI is OpenAI compatible, using common env for key
+        const response = await fetch("https://api.x.ai/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${process.env.XAI_API_KEY}`
+          },
+          body: JSON.stringify({
+            model: modelToUse,
+            messages: [
+              { role: "system", content: SYSTEM_PROMPT },
+              { role: "user", content: prompt }
+            ],
+            temperature: 0.7
+          })
+        });
+        const data = await response.json();
+        text = data.choices[0].message.content;
+      } catch (err: any) {
+        console.error("xAI failed:", err.message);
+        throw err;
+      }
+    } else if (useGemini) {
       // Use Gemini model
-      const modelToUse = adminModel?.startsWith("gemini") ? adminModel : "gemini-3.1-pro-preview";
+      const modelToUse = (adminModel?.startsWith("gemini") || adminModel?.startsWith("google")) ? adminModel : "gemini-3.1-pro-preview";
       try {
         console.log("Using Gemini with model:", modelToUse);
         const gemini = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
