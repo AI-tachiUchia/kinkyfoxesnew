@@ -246,10 +246,14 @@ function HomeContent({ session }: { session: any }) {
       .on('presence', { event: 'sync' }, () => {
         const state = newChannel.presenceState();
         const others = Object.values(state).flat().filter(
-          (p: any) => p.user_id !== session?.user?.id || 'anonymous'
+          (p: any) => p.user_id !== session?.user?.id
         );
-        if (others.length > 0) {
-          const partner = others[0] as any;
+        
+        // Use a Set to handle duplicate entries by user_id
+        const uniqueOthers = Array.from(new Map(others.map((p: any) => [p.user_id, p])).values());
+        
+        if (uniqueOthers.length > 0) {
+          const partner = uniqueOthers[0] as any;
           setPartnerName(partner.display_name);
           setPartnerOnline(true);
           setPartnerActivity(partner.activity || null);
@@ -259,17 +263,17 @@ function HomeContent({ session }: { session: any }) {
         }
       })
       .on('presence', { event: 'join' }, ({ newPresences }: any) => {
-        const partner = newPresences.find((p: any) => p.user_id !== session?.user?.id || 'anonymous');
+        const partner = newPresences.find((p: any) => p.user_id !== session?.user?.id);
         if (partner) addToast(`🦊 ${partner.display_name} ist der Session beigetreten!`);
       })
       .on('presence', { event: 'leave' }, ({ leftPresences }: any) => {
-        const partner = leftPresences.find((p: any) => p.user_id !== session?.user?.id || 'anonymous');
+        const partner = leftPresences.find((p: any) => p.user_id !== session?.user?.id);
         if (partner) addToast(`${partner.display_name} hat die Session verlassen`);
       })
       .subscribe(async (status) => {
         if (status === 'SUBSCRIBED') {
           await newChannel.track({
-            user_id: session?.user?.id || 'anonymous',
+            user_id: session?.user?.id,
             display_name: myDisplayName,
             activity: 'adjusting settings...',
             online_at: new Date().toISOString(),
@@ -297,7 +301,7 @@ function HomeContent({ session }: { session: any }) {
       game: 'reading the game...',
     };
     channel.track({
-      user_id: session?.user?.id || 'anonymous',
+      user_id: session?.user?.id,
       display_name: myDisplayName,
       activity: activityMap[view] || 'browsing...',
       online_at: new Date().toISOString(),
