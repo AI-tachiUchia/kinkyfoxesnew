@@ -2,7 +2,94 @@ import Anthropic from "@anthropic-ai/sdk";
 import { GoogleGenAI } from "@google/genai";
 import { NextResponse } from "next/server";
 
-const SYSTEM_PROMPT = `You are an expert designer of intimate partner games for couples. You draw from a deep toolkit of game mechanics to create experiences that are genuinely playable, surprising, and hot.
+// ─── New XML-structured system prompt ────────────────────────────────────────
+const SYSTEM_PROMPT = `<system_instructions>
+<persona>
+Du bist ein brillanter Game-Designer, Beziehungspsychologe und Autor für interaktive Paar-Erfahrungen. Deine Aufgabe ist es, originelle, intime und spannende Spielaufgaben (Wahrheit, Pflicht, Rollenspiel oder Power-Play) für Liebespaare zu generieren. Du schreibst niemals wie ein generischer Chatbot, sondern wie ein kreativer Spielleiter.
+</persona>
+
+<core_logic_and_mechanics>
+Meaningful Verbs: Die Aufgabe muss eine handlungsorientierte Spielmechanik besitzen. Es geht um echte, bedeutungsvolle Interaktion (z.B. sensorischer Entzug, nonverbale Kommunikation, Temperature Play, Machtdynamiken).
+
+Keine Klischees (Negative Prompting): Vermeide generische KI-Phrasen. Blockierte Phrasen: "a weight settled", "eyes darkened/widened", "breath hitched", "jaw tightened", "silence stretched", "tongues battling for dominance", "not X but Y"-Konstruktionen, "elektrisierende Berührung", "lodernde Leidenschaft".
+
+Stil: Nutze starke, aktive Verben. Reduziere Adjektive und Adverbien auf ein absolutes Minimum. Erzeuge Spannung durch physische Details (Temperatur, Klang, Textur, Widerstand), nicht durch abstrakte Gefühlsbeschreibungen.
+
+Distanz beachten: Bei Video/Text-Only dürfen KEINE Berührungsaufgaben gefordert werden, die körperliche Präsenz voraussetzen.
+</core_logic_and_mechanics>
+
+<output_format>
+Nutze einen <thinking>-Block VOR dem JSON, um kurz zu prüfen:
+1. Sind die Aufgaben mit der Distanz logisch vereinbar?
+2. Entspricht die Eskalation exakt der geforderten Stufe?
+3. Wurden alle Limits/Lines respektiert?
+
+Danach: Antworte AUSSCHLIESSLICH mit einem validen JSON-Objekt ohne Markdown-Codeblöcke:
+{
+  "scenario_title": "Ein kreativer, atmosphärischer Titel",
+  "player_instructions": "Die vollständige, direkte Spielanweisung an das Paar — konkret und sofort spielbar",
+  "mechanic_twist": "Ein besonderer Haken, eine Regel oder ein Twist, der die Aufgabe unverwechselbar macht",
+  "estimated_duration_minutes": 15
+}
+</output_format>
+</system_instructions>`;
+
+// ─── Few-shot examples injected before <task> ─────────────────────────────────
+const FEW_SHOT_EXAMPLES = `<examples>
+<example id="1">
+<input>
+Distanz: Im selben Raum
+Atmosphäre: Romantisch
+Gegenstände: Kerze, Augenbinde
+Eskalationsstufe: 1
+Hard Limits: Keine
+Veils: Keine
+</input>
+<output>
+<thinking>
+Eskalationsstufe 1 = Eisbrecher, kein expliziter Content. Romantisch + Kerze + Augenbinde = sensorisches Erkundungsspiel. Distanz Im selben Raum — Berührungsaufgaben erlaubt. Limits beachtet.
+</thinking>
+{"scenario_title":"Kartographie der Haut","player_instructions":"Person A legt sich mit geschlossenen Augen hin. Person B hält eine brennende Kerze senkrecht ca. 30 cm über die Haut und kippt sie kurz — ein einzelner Wachstropfen fällt auf die Innenseite des Handgelenks. Person A beschreibt laut, was sie fühlt: Temperatur, Textur, die Sekunde vor dem Aufprall. Dann Rollentausch. Drei Runden. In der dritten Runde wählt Person B selbst den Körperbereich.","mechanic_twist":"Schweigen ist verboten. Wer die Beschreibung unterbricht oder verstummt, verliert die Wahl über den nächsten Bereich.","estimated_duration_minutes":12}
+</output>
+</example>
+
+<example id="2">
+<input>
+Distanz: Videochat
+Atmosphäre: Verspielt
+Gegenstände: Keine
+Eskalationsstufe: 2
+Hard Limits: Keine
+Veils: Explizite Akte
+</input>
+<output>
+<thinking>
+Eskalationsstufe 2 = Teasing, angedeuteter Inhalt. Videochat = keine physischen Berührungsaufgaben gegeneinander. Verspielt = spielerische Mechanik. Veils = Fade-to-Black bei expliziten Akten. Idee: Strip-Abfrage-Spiel mit Wissens-Charakter.
+</thinking>
+{"scenario_title":"Fünf Fragen oder ein Stück","player_instructions":"Person A stellt fünf Fragen — nicht über Vorlieben, sondern über konkrete Erinnerungen ('Was hast du beim letzten Mal gedacht, als…'). Für jede Antwort, die Person B zu vage beantwortet oder verweigert, muss Person B ein Kleidungsstück ablegen. Person A sieht das Ergebnis live auf dem Bildschirm. Nach fünf Fragen Rollentausch.","mechanic_twist":"Was als 'zu vage' gilt, entscheidet ausschließlich Person A — ohne Widerspruchsrecht. Alle abgelegten Stücke bleiben bis zum Ende der Runde weg.","estimated_duration_minutes":20}
+</output>
+</example>
+
+<example id="3">
+<input>
+Distanz: Im selben Raum
+Atmosphäre: Kinky
+Gegenstände: Handschellen, Eiswürfel, Augenbinde
+Eskalationsstufe: 4
+Hard Limits: Keine Schmerzen über Stufe 3
+Veils: Keine
+</input>
+<output>
+<thinking>
+Eskalationsstufe 4 = Schwarz/Explizit. Handschellen + Eiswürfel + Augenbinde = Power Play mit Temperatur. Kinky = klare Machtdynamik. Hard Limit = kein starker Schmerz. Explizite Handlungen erlaubt, Schmerz bleibt unter Stufe 3 (leicht, kurz). Distanz Im selben Raum — alle Toys einsetzbar.
+</thinking>
+{"scenario_title":"Drei Minuten Stille","player_instructions":"Person B wird mit Augenbinde und Handschellen (hinter dem Rücken oder am Bett befestigt) fixiert. Person A hat exakt drei Minuten Zeit und darf ausschließlich Eiswürfel und die eigenen Hände einsetzen. Keine Erklärungen, kein Kommentar. Person B hat Safeword Gelb/Rot. Was Person A wählt, wählt Person A allein. Nach drei Minuten Rollentausch — wer jetzt die Handschellen anlegt, entscheidet das Losverfahren: Münzwurf.","mechanic_twist":"Person A darf in den drei Minuten exakt einmal sprechen — ein einziger Satz. Was dieser Satz ist, bleibt Person As Wahl. Wird er nicht genutzt, verfällt er.","estimated_duration_minutes":25}
+</output>
+</example>
+</examples>`;
+
+// ─── Legacy system prompt kept for complicate/refine actions ─────────────────
+const LEGACY_SYSTEM_PROMPT = `You are an expert designer of intimate partner games for couples. You draw from a deep toolkit of game mechanics to create experiences that are genuinely playable, surprising, and hot.
 
 GAME DESIGN TOOLKIT — draw from these mechanics as appropriate:
 - **Dares & challenges**: Specific, concrete actions (not vague "do something sexy"). Always pre-generate the actual dares/challenges — never tell players to "come up with their own."
@@ -20,8 +107,6 @@ GAME DESIGN TOOLKIT — draw from these mechanics as appropriate:
 - **Props & environment**: Creative use of household items, furniture, ice, food, mirrors, phone/camera (if consented)
 
 DICE ROLL FORMAT — Use this when a game mechanic involves random selection from options:
-When a section has a list of options where the player should randomly pick ONE (punishments, dares, positions, challenges, etc.), format it as a dice roll block instead of listing all options visibly. This creates suspense — the player clicks a button to reveal their fate.
-
 Format (embed directly in the section's markdown content):
 :::dice{label="Description of what you're rolling for..."}
 - Option 1
@@ -32,39 +117,44 @@ Format (embed directly in the section's markdown content):
 - Option 6
 :::
 
-Rules for dice rolls:
-- Use ONLY when there are 3+ options and the game mechanic calls for random selection
-- The label should be atmospheric and fit the game's tone (e.g., "Würfle für deine Strafe..." or "Roll for your next dare...")
-- Provide 4-8 options per dice roll — enough variety but not overwhelming
-- You can have multiple dice rolls in one section if the game structure demands it
-- Do NOT use dice rolls for sequential steps — only for randomized picks
-- Surrounding text/rules should be normal markdown, only the randomized options go in :::dice blocks
-
 CRITICAL RULES FOR EVERY GAME:
-1. **Be specific and concrete.** Never say "dare each other to do things" — write out the actual dares. Never say "take turns challenging each other" — write the specific challenges with options.
-2. **Pre-generate all content.** If the game has rounds, write what happens in each round. If it has challenges, list them. If it has cards/prompts, provide them — at least 8-12 items. Players should be able to play immediately without inventing anything.
-3. **NEVER announce phases/rounds you don't fully write.** If you say the game has 4 phases, you MUST write out ALL 4 phases completely. If you list a round by name, you MUST fully describe it. NEVER use placeholder text like "(continue similarly for rounds 3 and 4)" or "repeat for remaining phases" or "etc." Every announced element must be fully written. If you cannot fit it, reduce the number of phases/rounds — but always deliver 100% of what you announce.
-4. **Include clear rules.** How do you win/lose? What triggers escalation? When does a round end? How are turns structured? Write it so two people can pick this up and play with zero ambiguity.
-5. **Be focused, not bloated.** Aim for 5–7 tight sections. A great game is dense and playable, not a novel. Each section should contain only what players actually need in that moment. Don't pad with repetition or meta-commentary.
-6. **No theatre scripts.** NEVER write exact words for players to say. Describe what needs to happen and the emotional/power intent — players improvise in the moment. Instead of *"Say: 'I want you to...' "* write *"Tell your partner explicitly what you want them to do to you."* The game guides the experience; it does not put words in anyone's mouth.
-7. **Build in escalation.** Games should start lighter and build intensity. Early rounds warm up; later rounds push boundaries. The arc matters.
-8. **Match the setup.** If players are long-distance, rules must work over video/phone. If restrained, account for limited movement. If toys are listed, integrate them meaningfully — don't just mention them.
-9. **Include safety.** Mention safewords naturally (traffic light system). For intense games, include aftercare suggestions.
-10. **Be creative, not generic.** Avoid cliché "truth or dare" retreads unless specifically requested. Combine mechanics in unexpected ways. Surprise the players.`;
+1. Be specific and concrete. Pre-generate all content.
+2. NEVER announce phases/rounds you don't fully write.
+3. Include clear rules. Be focused, not bloated.
+4. No theatre scripts — guide the experience, don't put words in mouths.
+5. Build in escalation. Match the setup.
+6. Include safety: mention safewords naturally.`;
 
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    // adminModel: optional override set by admin panel (requires NEXT_PUBLIC_ADMIN_SECRET in Vercel env vars)
-    const { action, language = "de", currentGame, refinement, distance, customDistance, toys, vibe, template, heatLevel = 3, adminModel } = body;
+    const {
+      action,
+      language = "de",
+      currentGame,
+      refinement,
+      distance,
+      customDistance,
+      toys,
+      vibe,
+      template,
+      heatLevel = 3,
+      adminModel,
+      // New params
+      atmosphaere,
+      eskalationsstufe = 2,
+      hardLimits,
+      veils,
+    } = body;
+
     const heatDescriptions: Record<number, string> = {
-      1: "Soft & romantic — sensual teasing, intimate connection, gentle commands. No explicit sexual acts. Focus on anticipation, touch, eye contact, whispered words, slow exploration.",
-      2: "Flirty & suggestive — light adult content, playful power dynamics, clothing comes off gradually. Suggestive dares, body worship, mild restraint. Teasing but no graphic acts.",
-      3: "Clearly kinky — explicit BDSM-lite, direct sexual content, real power exchange. Oral, manual stimulation, bondage, tease & denial, specific positions and acts. Players will get naked and physical.",
-      4: "Intense — bold and explicit. Hard power play, edging, punishment/reward systems, degradation or praise play, predicament scenarios, humiliation elements (consensual). Push boundaries.",
-      5: "Maximum — no-holds-barred filthy. Extreme dares, heavy BDSM, graphic and creative acts, elaborate scenarios. Nothing is off the table. Make it genuinely shocking and transgressive.",
+      1: "Soft & romantic — sensual teasing, intimate connection, gentle commands. No explicit sexual acts.",
+      2: "Flirty & suggestive — light adult content, playful power dynamics, clothing comes off gradually.",
+      3: "Clearly kinky — explicit BDSM-lite, direct sexual content, real power exchange.",
+      4: "Intense — bold and explicit. Hard power play, edging, punishment/reward systems.",
+      5: "Maximum — no-holds-barred. Extreme dares, heavy BDSM, graphic and creative acts.",
     };
-    const heatInstruction = `Heat level: ${heatLevel}/5 — ${heatDescriptions[heatLevel] ?? heatDescriptions[3]}. Calibrate ALL content, language intensity, and explicitness to this level exactly. Higher heat = more graphic language, bolder acts, edgier dynamics.`;
+    const heatInstruction = `Heat level: ${heatLevel}/5 — ${heatDescriptions[heatLevel] ?? heatDescriptions[3]}. Calibrate ALL content to this level.`;
 
     const langInstruction = language === "de"
       ? "IMPORTANT: Generate the ENTIRE game (all titles, durations, and content) strictly in GERMAN language."
@@ -78,8 +168,10 @@ export async function POST(req: Request) {
     }
 
     let prompt = "";
+    let systemToUse = SYSTEM_PROMPT;
 
     if (action === "complicate") {
+      systemToUse = LEGACY_SYSTEM_PROMPT;
       prompt = `I have this game:
 ${JSON.stringify(currentGame)}
 
@@ -106,12 +198,13 @@ Output ONLY a JSON object:
   ]
 }`;
     } else if (action === "refine") {
+      systemToUse = LEGACY_SYSTEM_PROMPT;
       prompt = `I have this game:
 ${JSON.stringify(currentGame)}
 
 ${refinement ? `Player feedback: "${refinement}"\nApply this feedback precisely.` : "Polish this game — tighten the rules, improve flow, make challenges more specific, fill in any gaps where players would be left guessing what to do."}
 
-Maintain the same overall structure and heat level, but make it better. If any rules are vague, make them concrete. If any challenges are missing, add them. If the game feels thin, flesh it out.
+Maintain the same overall structure and heat level, but make it better.
 
 ${heatInstruction}
 ${langInstruction}
@@ -125,44 +218,45 @@ Output ONLY a JSON object:
   ]
 }`;
     } else {
-      const distanceText = distance === 'custom' ? customDistance : distance;
-      const templateText = template ? `\nGame template/style to follow: "${template}" — adapt the game strongly to this style while keeping it original.` : "";
-      prompt = `Generate a complete, ready-to-play intimate game for a couple.
+      // New XML-structured generate prompt
+      const distanceText = distance === "custom" ? (customDistance || "Eigene Situation") : mapDistanceToText(distance);
+      const eskalationLabels: Record<number, string> = {
+        1: "1 — Grün / Eisbrecher (sanft, romantisch, kein expliziter Inhalt)",
+        2: "2 — Gelb / Teasing (angedeutet, verspielt, leichtes Flirten)",
+        3: "3 — Rot / Intensiv (klar erotisch, Machtdynamiken, explizit)",
+        4: "4 — Schwarz / Explizit (harte Machtspiele, grafisch, pusht Grenzen)",
+      };
+      const eskalationLabel = eskalationLabels[eskalationsstufe] ?? eskalationLabels[2];
+      const templateText = template ? `\nSpielvorlage/Stil: "${template}" — passe das Spiel stark an diesen Stil an, bleibe aber originell.` : "";
 
-Setup: ${distanceText || "Not specified"}
-Available toys/items: ${toys || "None specified"}
-Vibe/theme: ${vibe || "Surprise me — be creative"}${templateText}
-${heatInstruction}
+      prompt = `<dynamic_parameters>
+Distanz: ${distanceText}
+Gewünschte Atmosphäre: ${atmosphaere || vibe || "Überrasch mich — sei kreativ"}
+Verfügbare Gegenstände/Toys: ${toys || "Keine angegeben"}
+Eskalationsstufe: ${eskalationLabel}${templateText}
+</dynamic_parameters>
 
-Design a game that two people can pick up and play RIGHT NOW with zero prep beyond what's listed in setup. Include:
-- A clear structure (rounds, phases, or turns — whatever fits)
-- All challenges, dares, or prompts pre-written (at least 8-12 if applicable)
-- Specific rules for how turns work, what triggers escalation, and how the game ends
-- Built-in escalation arc from warm-up to peak intensity
-- If there are choices or randomization, provide the full list of options
+<safety_and_consent>
+HARD LIMITS (Lines): Generiere NIEMALS Inhalte zu diesen Themen: ${hardLimits || "Keine spezifischen Limits angegeben"}.
+VEILS (Fade-to-Black): Diese Themen dürfen impliziert, aber nicht explizit grafisch beschrieben werden: ${veils || "Keine spezifischen Veils angegeben"}.
+</safety_and_consent>
 
-Target 5–7 focused sections. Write the actual game content — no placeholders — but stay tight. Every sentence should add playability, not word count.
+${FEW_SHOT_EXAMPLES}
 
+<task>
+Generiere exakt EINE neue Spielaufgabe basierend auf den <dynamic_parameters>.
 ${langInstruction}
-
-Output ONLY a JSON object:
-{
-  "title": "Creative, catchy game title",
-  "duration": "Realistic estimated play time",
-  "sections": [
-    { "title": "Section Name", "content": "Full markdown content — be thorough" }
-  ]
-}`;
+Nutze zwingend einen <thinking> Block VOR deiner JSON-Ausgabe, um deine Logik zu prüfen.
+Gib danach das JSON aus — ohne Markdown-Codeblöcke.
+</task>`;
     }
 
     let text = "";
 
-    // Determine which model to use (admin override takes priority)
     const isGeminiOverride = adminModel && (adminModel.startsWith("gemini") || adminModel.startsWith("google"));
     const isClaudeOverride = adminModel && (adminModel.startsWith("claude") || adminModel.startsWith("opus") || adminModel.startsWith("anthropic"));
     const isXAIOverride = adminModel && (adminModel.startsWith("grok") || adminModel.startsWith("xai"));
 
-    // If no admin model is set, default to Gemini if available (as requested by user)
     const useGemini = isGeminiOverride || (!adminModel && !isXAIOverride && hasGemini);
     const useClaude = isClaudeOverride || (!useGemini && !isXAIOverride && hasAnthropic);
     const useXAI = isXAIOverride;
@@ -171,7 +265,6 @@ Output ONLY a JSON object:
       try {
         const modelToUse = adminModel?.includes('/') ? adminModel : (adminModel === 'grok' ? 'grok-4.20-0309-reasoning' : 'grok-4-1-fast-reasoning');
         console.log("Using xAI with model:", modelToUse);
-        // xAI is OpenAI compatible, using common env for key
         const response = await fetch("https://api.x.ai/v1/chat/completions", {
           method: "POST",
           headers: {
@@ -181,7 +274,7 @@ Output ONLY a JSON object:
           body: JSON.stringify({
             model: modelToUse,
             messages: [
-              { role: "system", content: SYSTEM_PROMPT },
+              { role: "system", content: systemToUse },
               { role: "user", content: prompt }
             ],
             temperature: 0.7
@@ -194,32 +287,26 @@ Output ONLY a JSON object:
         throw err;
       }
     } else if (useGemini) {
-      // Use Gemini model
       const modelToUse = (adminModel?.startsWith("gemini") || adminModel?.startsWith("google")) ? adminModel : "gemini-3.1-pro-preview";
       try {
         console.log("Using Gemini with model:", modelToUse);
         const gemini = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
         const response = await gemini.models.generateContent({
           model: modelToUse,
-          contents: [{ role: "user", parts: [{ text: `${SYSTEM_PROMPT}\n\n---\n\n${prompt}` }] }],
+          contents: [{ role: "user", parts: [{ text: `${systemToUse}\n\n---\n\n${prompt}` }] }],
           config: { maxOutputTokens: 8192 },
         });
         text = response.text ?? "";
         console.log("Gemini Success!");
       } catch (err: any) {
         console.error("Gemini failed:", err.message);
-        if (err.message.includes("not found") || err.message.includes("404")) {
-           console.warn("Model not found.");
-        }
-        
-        // Fallback to Anthropic if Gemini fails and Anthropic is available
         if (hasAnthropic) {
           console.log("Falling back from Gemini to Anthropic...");
           const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
           const response = await anthropic.messages.create({
             model: "claude-sonnet-4-6",
             max_tokens: 8192,
-            system: SYSTEM_PROMPT,
+            system: systemToUse,
             messages: [{ role: "user", content: prompt }],
           });
           text = response.content[0].type === "text" ? response.content[0].text : "";
@@ -235,7 +322,7 @@ Output ONLY a JSON object:
         const response = await anthropic.messages.create({
           model: modelToUse,
           max_tokens: 8192,
-          system: SYSTEM_PROMPT,
+          system: systemToUse,
           messages: [{ role: "user", content: prompt }],
         });
         text = response.content[0].type === "text" ? response.content[0].text : "";
@@ -244,14 +331,9 @@ Output ONLY a JSON object:
         console.warn(`Anthropic (${modelToUse}) failed:`, err.message);
         const isAuthError = err?.status === 401;
         const isCredits = err?.status === 529 || err?.status === 402 || err?.message?.includes("credit") || err?.message?.includes("overload");
-        
         if ((isCredits || isAuthError) && hasGemini) {
-          console.warn("Falling back to Gemini Pro due to Anthropic error (Auth/Credits).");
+          console.warn("Falling back to Gemini due to Anthropic error.");
         } else {
-          // If it's a model error (404), maybe the name is wrong
-          if (err?.status === 404) {
-             console.warn("Claude model not found, check model name.");
-          }
           throw err;
         }
       }
@@ -262,11 +344,14 @@ Output ONLY a JSON object:
       const gemini = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
       const response = await gemini.models.generateContent({
         model: "gemini-3.1-pro-preview",
-        contents: [{ role: "user", parts: [{ text: `${SYSTEM_PROMPT}\n\n---\n\n${prompt}` }] }],
+        contents: [{ role: "user", parts: [{ text: `${systemToUse}\n\n---\n\n${prompt}` }] }],
         config: { maxOutputTokens: 8192 },
       });
       text = response.text ?? "";
     }
+
+    // Strip <thinking>...</thinking> blocks (CoT reasoning not meant for users)
+    text = text.replace(/<thinking>[\s\S]*?<\/thinking>/gi, "").trim();
 
     // Strip markdown fences, then find the JSON object
     const stripped = text.replace(/^```(?:json)?\s*/m, '').replace(/```\s*$/m, '').trim();
@@ -277,12 +362,11 @@ Output ONLY a JSON object:
     }
     const jsonStr = stripped.substring(jsonStart, jsonEnd + 1);
 
-    let parsedData;
+    let parsedData: any;
     try {
       parsedData = JSON.parse(jsonStr);
     } catch (e1) {
       try {
-        // Fix literal newlines/tabs inside JSON string values
         const fixed = jsonStr.replace(/[\x00-\x1f]/g, (ch: string) => {
           if (ch === '\n') return '\\n';
           if (ch === '\r') return '\\r';
@@ -291,10 +375,8 @@ Output ONLY a JSON object:
         });
         parsedData = JSON.parse(fixed);
       } catch (e2) {
-        // Last resort: extract fields with regex
-        const titleMatch = jsonStr.match(/"title"\s*:\s*"([^"]*?)"/);
-        const durationMatch = jsonStr.match(/"duration"\s*:\s*"([^"]*?)"/);
-        // Find all section blocks
+        const titleMatch = jsonStr.match(/"(?:title|scenario_title)"\s*:\s*"([^"]*?)"/);
+        const durationMatch = jsonStr.match(/"(?:duration|estimated_duration_minutes)"\s*:\s*"?(\d+[^",}]*)"?/);
         const sections: { title: string; content: string }[] = [];
         const sectionRegex = /\{\s*"title"\s*:\s*"([^"]*?)"\s*,\s*"content"\s*:\s*"([\s\S]*?)"\s*\}/g;
         let match;
@@ -304,7 +386,7 @@ Output ONLY a JSON object:
         if (titleMatch && sections.length > 0) {
           parsedData = {
             title: titleMatch[1],
-            duration: durationMatch?.[1] || "~15 mins",
+            duration: durationMatch?.[1] || "~15 min",
             sections
           };
         } else {
@@ -313,9 +395,43 @@ Output ONLY a JSON object:
       }
     }
 
+    // Convert new single-challenge format to sections format for display
+    if (parsedData.scenario_title) {
+      const durationMin = parsedData.estimated_duration_minutes;
+      const durationStr = typeof durationMin === "number"
+        ? `~${durationMin} Minuten`
+        : (durationMin ? String(durationMin) + " Minuten" : "~15 Minuten");
+
+      parsedData = {
+        title: parsedData.scenario_title,
+        duration: durationStr,
+        sections: [
+          {
+            title: language === "de" ? "Anweisungen" : "Instructions",
+            content: parsedData.player_instructions || ""
+          },
+          {
+            title: language === "de" ? "Besonderer Dreh" : "The Twist",
+            content: parsedData.mechanic_twist || ""
+          }
+        ].filter(s => s.content)
+      };
+    }
+
     return NextResponse.json(parsedData);
   } catch (error: any) {
     console.error("Error generating game:", error);
     return NextResponse.json({ error: "Failed to generate game. " + error.message }, { status: 500 });
+  }
+}
+
+function mapDistanceToText(distance: string): string {
+  switch (distance) {
+    case "same-room": return "Im selben Raum";
+    case "video":     return "Long-Distance / Videochat";
+    case "text":      return "Text-Only / Chat";
+    case "tonight":   return "Im selben Raum (bald)";
+    case "virtual":   return "Long-Distance / Videochat";
+    default:          return distance || "Nicht angegeben";
   }
 }
