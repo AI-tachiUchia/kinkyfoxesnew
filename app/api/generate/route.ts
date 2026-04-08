@@ -195,7 +195,7 @@ Output ONLY a JSON object:
       }
     } else if (useGemini) {
       // Use Gemini model
-      const modelToUse = (adminModel?.startsWith("gemini") || adminModel?.startsWith("google")) ? adminModel : "gemini-3.1-pro-preview";
+      const modelToUse = (adminModel?.startsWith("gemini") || adminModel?.startsWith("google")) ? adminModel : "gemini-3-flash-lite";
       try {
         console.log("Using Gemini with model:", modelToUse);
         const gemini = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
