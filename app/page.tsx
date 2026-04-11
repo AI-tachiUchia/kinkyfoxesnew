@@ -582,6 +582,7 @@ function HomeContent({ session }: { session: any }) {
           action: "complicate",
           language,
           currentGame: game,
+          heatLevel,
           adminModel: adminModel || undefined,
         }),
       });
@@ -615,6 +616,7 @@ function HomeContent({ session }: { session: any }) {
           language,
           currentGame: game,
           refinement: refinementText || undefined,
+          heatLevel,
           adminModel: adminModel || undefined,
         }),
       });
