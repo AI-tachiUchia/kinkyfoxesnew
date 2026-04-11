@@ -10,7 +10,6 @@ import FoxDisplay from "./components/FoxDisplay";
 import FoxImage, { detectFoxImage, FOX_IMAGES } from "./components/FoxImage";
 import FoxLoadingVideo from "./components/FoxLoadingVideo";
 import GameMasterSetup from "./components/GameMasterSetup";
-import ClassicSetup from "./components/ClassicSetup";
 import PartnerStatus from "./components/PartnerStatus";
 import DiceRoll, { parseDiceRolls } from "./components/DiceRoll";
 
@@ -44,14 +43,14 @@ function Auth() {
 
         <form onSubmit={handleLogin} className="space-y-6">
           <div className="space-y-2">
-            <label className="text-xs font-medium tracking-[0.15em] text-gray-400 uppercase">{t.login.email}</label>
-            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)}
+            <label htmlFor="login-email" className="text-xs font-medium tracking-[0.15em] text-gray-400 uppercase">{t.login.email}</label>
+            <input id="login-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)}
               className="w-full bg-[#121418] border border-white/[0.08] rounded-lg p-4 text-gray-200 focus:outline-none focus:ring-1 focus:ring-[#d97757] focus:border-[#d97757] transition-all"
               required />
           </div>
           <div className="space-y-2">
-            <label className="text-xs font-medium tracking-[0.15em] text-gray-400 uppercase">{t.login.password}</label>
-            <input type="password" value={password} onChange={(e) => setPassword(e.target.value)}
+            <label htmlFor="login-password" className="text-xs font-medium tracking-[0.15em] text-gray-400 uppercase">{t.login.password}</label>
+            <input id="login-password" type="password" value={password} onChange={(e) => setPassword(e.target.value)}
               className="w-full bg-[#121418] border border-white/[0.08] rounded-lg p-4 text-gray-200 focus:outline-none focus:ring-1 focus:ring-[#d97757] focus:border-[#d97757] transition-all"
               required />
           </div>
@@ -120,8 +119,6 @@ function HomeContent({ session }: { session: any }) {
   const [toys, setToys] = useState("");
   const [vibe, setVibe] = useState("");
   const [template, setTemplate] = useState("");
-  const [useClassic, setUseClassic] = useState(() => searchParams.get('classic') === '1');
-  useEffect(() => { setUseClassic(searchParams.get('classic') === '1'); }, [searchParams]);
   const [heatLevel, setHeatLevel] = useState(3);
   // Safety rail — survived prompt-master-update simplification (2026-04-11)
   const [hardLimits, setHardLimits] = useState("");
@@ -136,7 +133,6 @@ function HomeContent({ session }: { session: any }) {
   const [newToyName, setNewToyName] = useState("");
   const [isAddingToy, setIsAddingToy] = useState(false);
   const [showToybox, setShowToybox] = useState(true);
-  const [showHeatLegend, setShowHeatLegend] = useState(false);
   const [isSurprising, setIsSurprising] = useState(false);
   const [refinementText, setRefinementText] = useState("");
   const [showRefineInput, setShowRefineInput] = useState(false);
@@ -798,39 +794,6 @@ function HomeContent({ session }: { session: any }) {
             </div>
 
             {/* Config card / Setup Wizard */}
-            <div className="w-full flex justify-end mb-2">
-              <button onClick={() => {
-                  const url = new URL(window.location.href);
-                  if (useClassic) url.searchParams.delete('classic');
-                  else url.searchParams.set('classic', '1');
-                  router.replace(url.pathname + url.search);
-                  setUseClassic(!useClassic);
-                }} 
-                className="text-[10px] text-gray-500 hover:text-gray-300 uppercase tracking-widest flex items-center gap-1.5 transition-colors">
-                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" /></svg>
-                {useClassic ? "Zum Game Master wechseln" : "Zum klassischen Formular wechseln"}
-              </button>
-            </div>
-
-            {useClassic ? (
-              <ClassicSetup
-                distance={distance} setDistance={setDistance}
-                customDistance={customDistance} setCustomDistance={setCustomDistance}
-                heatLevel={heatLevel} setHeatLevel={setHeatLevel}
-                vibe={vibe} setVibe={setVibe}
-                template={template} setTemplate={setTemplate}
-                toys={toys} setToys={setToys}
-                savedToys={savedToys} partnerToys={partnerToys}
-                selectedToyIds={selectedToyIds} handleToggleToy={handleToggleToy} handleDeleteToy={handleDeleteToy}
-                newToyName={newToyName} setNewToyName={setNewToyName} handleAddToy={handleAddToy} isAddingToy={isAddingToy}
-                toyItems={toyItems} handleRemoveToyItem={handleRemoveToyItem} handleAddToyItem={handleAddToyItem} toysInputRef={toysInputRef} toyComment={toyComment}
-                showToybox={showToybox} setShowToybox={setShowToybox}
-                onGenerate={handleGenerate} isGenerating={isGenerating} onSurprise={handleSurprise}
-                showHeatLegend={showHeatLegend} setShowHeatLegend={setShowHeatLegend}
-                broadcastState={broadcastState}
-                hardLimits={hardLimits} setHardLimits={setHardLimits}
-              />
-            ) : (
             <GameMasterSetup
               distance={distance} setDistance={setDistance}
               customDistance={customDistance} setCustomDistance={setCustomDistance}
@@ -846,7 +809,6 @@ function HomeContent({ session }: { session: any }) {
               onGenerate={handleGenerate} isGenerating={isGenerating} onSurprise={handleSurprise}
               hardLimits={hardLimits} setHardLimits={setHardLimits}
             />
-            )}
 
             <div className="w-full pt-1 animate-fade-in">
               <label className="w-full flex justify-center items-center gap-2 bg-[#0e1015] hover:bg-[#161920] border border-white/[0.06] hover:border-white/[0.12] text-gray-400 hover:text-gray-300 font-medium text-xs tracking-widest uppercase py-4 px-6 rounded-xl transition-all duration-300 cursor-pointer shadow-lg">
