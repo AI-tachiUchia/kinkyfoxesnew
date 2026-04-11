@@ -23,7 +23,7 @@ All feature branches fully merged into main and pushed:
 3. **Mobile/Safari video fix:** `preload="none"` added to `FoxLoadingVideo.tsx` — prevents auto-preloading on mobile which caused buffering issues.
 4. **Dice Roll system:** Realtime dice roll UI (6-sided) synced across partners via Supabase broadcast — was already live since a prior session.
 5. **heatLevel in API calls (unstaged):** `app/page.tsx` passes `heatLevel` to both "complicate" and "refine" API calls. Not yet committed.
-6. **Dice fix under new XML prompt:** `app/api/generate/route.ts` — added optional `dice_roll` JSON field + server-side injection of `:::dice{}` markdown block so the interactive dice UI works again for newly generated games. See CHANGELOG for details.
+6. **Dice fix under new XML prompt (commit `b62d049`, verified working in prod):** `app/api/generate/route.ts` — added optional `dice_roll` JSON field + server-side injection of `:::dice{}` markdown block so the interactive dice UI works again for newly generated games. Confirmed by Tim on Vercel prod after push. See CHANGELOG for details.
 
 ## Active Bugs / Known Issues
 See `issues.md` for the full list. Summary:

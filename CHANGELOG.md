@@ -4,6 +4,7 @@
 
 ## 2026-04-11 — Fix: Dice roll mechanic restored under new XML prompt
 
+**Commit:** `b62d049` on `main` — pushed to github.com/AI-tachiUchia/kinkyfoxesnew, deployed via Vercel. **Verified working in prod by Tim.**
 **File:** `app/api/generate/route.ts`
 **Why:** After merging `feature/prompt-master-update`, the new XML-structured system prompt produced flat `player_instructions` text and no longer emitted the `:::dice{label="..."}` markdown block that `app/components/DiceRoll.tsx` (`parseDiceRolls()`) looks for. Dice showed up as a plain bulleted list of six options instead of the interactive, partner-synced roll.
 
