@@ -23,14 +23,21 @@ Nutze einen <thinking>-Block VOR dem JSON, um kurz zu prüfen:
 1. Sind die Aufgaben mit der Distanz logisch vereinbar?
 2. Entspricht die Eskalation exakt der geforderten Stufe?
 3. Wurden alle Limits/Lines respektiert?
+4. Braucht das Spiel einen Würfel-Mechanismus? (Zufallsauswahl aus exakt 6 Optionen — Körperstellen, Handlungen, Regeln, etc.)
 
 Danach: Antworte AUSSCHLIESSLICH mit einem validen JSON-Objekt ohne Markdown-Codeblöcke:
 {
   "scenario_title": "Ein kreativer, atmosphärischer Titel",
   "player_instructions": "Die vollständige, direkte Spielanweisung an das Paar — konkret und sofort spielbar",
+  "dice_roll": {
+    "label": "Wofür wird gewürfelt? (z.B. 'Würfelt, um die Körperstelle zu bestimmen:')",
+    "options": ["Option 1", "Option 2", "Option 3", "Option 4", "Option 5", "Option 6"]
+  },
   "mechanic_twist": "Ein besonderer Haken, eine Regel oder ein Twist, der die Aufgabe unverwechselbar macht",
   "estimated_duration_minutes": 15
 }
+
+WICHTIG: Das Feld "dice_roll" ist OPTIONAL. Setze es nur, wenn ein echter Würfelmechanismus (zufällige Wahl aus genau 6 Optionen) sinnvoll zum Spiel passt. Wenn nicht, lasse "dice_roll" vollständig weg (nicht null, einfach weglassen).
 </output_format>
 </system_instructions>`;
 
@@ -64,9 +71,26 @@ Veils: Explizite Akte
 </input>
 <output>
 <thinking>
-Eskalationsstufe 2 = Teasing, angedeuteter Inhalt. Videochat = keine physischen Berührungsaufgaben gegeneinander. Verspielt = spielerische Mechanik. Veils = Fade-to-Black bei expliziten Akten. Idee: Strip-Abfrage-Spiel mit Wissens-Charakter.
+Eskalationsstufe 2 = Teasing, angedeuteter Inhalt. Videochat = keine physischen Berührungsaufgaben gegeneinander. Verspielt = spielerische Mechanik. Veils = Fade-to-Black bei expliziten Akten. Idee: Strip-Abfrage-Spiel mit Wissens-Charakter. Kein Würfel notwendig — linearer Ablauf.
 </thinking>
 {"scenario_title":"Fünf Fragen oder ein Stück","player_instructions":"Person A stellt fünf Fragen — nicht über Vorlieben, sondern über konkrete Erinnerungen ('Was hast du beim letzten Mal gedacht, als…'). Für jede Antwort, die Person B zu vage beantwortet oder verweigert, muss Person B ein Kleidungsstück ablegen. Person A sieht das Ergebnis live auf dem Bildschirm. Nach fünf Fragen Rollentausch.","mechanic_twist":"Was als 'zu vage' gilt, entscheidet ausschließlich Person A — ohne Widerspruchsrecht. Alle abgelegten Stücke bleiben bis zum Ende der Runde weg.","estimated_duration_minutes":20}
+</output>
+</example>
+
+<example id="2b">
+<input>
+Distanz: Im selben Raum
+Atmosphäre: Verspielt
+Gegenstände: Augenbinde
+Eskalationsstufe: 2
+Hard Limits: Keine
+Veils: Keine
+</input>
+<output>
+<thinking>
+Eskalationsstufe 2 = Teasing. Im selben Raum = Berührungsaufgaben erlaubt. Verspielt = spielerischer Zufallsmechanismus macht Sinn. Würfel für Körperstelle — genau 6 Optionen, passt perfekt. Augenbinde erhöht die Spannung beim Würfeln.
+</thinking>
+{"scenario_title":"Blinde Lotterie","player_instructions":"Person B trägt die Augenbinde. Person A würfelt — das Ergebnis bestimmt die Körperstelle. Person A berührt diese Stelle für genau 60 Sekunden, ohne ein Wort zu sagen. Person B darf sprechen. Nach drei Runden Rollentausch — Person B würfelt dann für Person A.","dice_roll":{"label":"Würfelt, um die Körperstelle zu bestimmen:","options":["Nacken und Schultern","Innenseite der Arme","Bauch","Innenseite der Oberschenkel","Rücken","Fußsohlen"]},"mechanic_twist":"Person A darf die gewürfelte Stelle WECHSELN — aber nur einmal pro Spiel. Dieses Joker-Recht muss laut angesagt werden, bevor die Zeit läuft.","estimated_duration_minutes":18}
 </output>
 </example>
 
@@ -403,13 +427,30 @@ Gib danach das JSON aus — ohne Markdown-Codeblöcke.
         ? `~${durationMin} Minuten`
         : (durationMin ? String(durationMin) + " Minuten" : "~15 Minuten");
 
+      // If the AI returned a dice_roll, inject a :::dice{} markdown block that the
+      // UI's parseDiceRolls() regex understands.
+      // Regex: /:::dice\{label="([^"]*?)"\}\n([\s\S]*?):::/g — so the label must not contain
+      // a literal double quote, and the block must end on its own line.
+      let instructionsContent = parsedData.player_instructions || "";
+      const diceRoll = parsedData.dice_roll;
+      if (diceRoll?.label && Array.isArray(diceRoll.options) && diceRoll.options.length >= 2) {
+        const safeLabel = String(diceRoll.label).replace(/"/g, "\u201D").replace(/\s+/g, " ").trim();
+        const safeOptions = diceRoll.options
+          .map((o: unknown) => String(o ?? "").replace(/[\r\n]+/g, " ").trim())
+          .filter((o: string) => o.length > 0);
+        if (safeOptions.length >= 2) {
+          const diceBlock = `\n\n:::dice{label="${safeLabel}"}\n${safeOptions.map((o: string) => `- ${o}`).join("\n")}\n:::`;
+          instructionsContent += diceBlock;
+        }
+      }
+
       parsedData = {
         title: parsedData.scenario_title,
         duration: durationStr,
         sections: [
           {
             title: language === "de" ? "Anweisungen" : "Instructions",
-            content: parsedData.player_instructions || ""
+            content: instructionsContent
           },
           {
             title: language === "de" ? "Besonderer Dreh" : "The Twist",
