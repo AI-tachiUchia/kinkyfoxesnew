@@ -123,11 +123,8 @@ function HomeContent({ session }: { session: any }) {
   const [useClassic, setUseClassic] = useState(() => searchParams.get('classic') === '1');
   useEffect(() => { setUseClassic(searchParams.get('classic') === '1'); }, [searchParams]);
   const [heatLevel, setHeatLevel] = useState(3);
-  // New master-prompt params
-  const [atmosphaere, setAtmosphaere] = useState("");
-  const [eskalationsstufe, setEskalationsstufe] = useState(2);
+  // Safety rail — survived prompt-master-update simplification (2026-04-11)
   const [hardLimits, setHardLimits] = useState("");
-  const [veils, setVeils] = useState("");
   const [game, setGame] = useState<GeneratedGame | null>(null);
   
   const [isGenerating, setIsGenerating] = useState(false);
@@ -193,11 +190,11 @@ function HomeContent({ session }: { session: any }) {
     setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 4000);
   };
 
-  const stateRef = useRef({ distance, customDistance, toys, vibe, template, game, isGenerating, isComplicating, isRefining, savedToys, heatLevel, atmosphaere, eskalationsstufe, hardLimits, veils });
+  const stateRef = useRef({ distance, customDistance, toys, vibe, template, game, isGenerating, isComplicating, isRefining, savedToys, heatLevel, hardLimits });
   const toysInputRef = useRef<HTMLInputElement>(null);
   useEffect(() => {
-    stateRef.current = { distance, customDistance, toys, vibe, template, game, isGenerating, isComplicating, isRefining, savedToys, heatLevel, atmosphaere, eskalationsstufe, hardLimits, veils };
-  }, [distance, customDistance, toys, vibe, template, game, isGenerating, isComplicating, isRefining, savedToys, heatLevel, atmosphaere, eskalationsstufe, hardLimits, veils]);
+    stateRef.current = { distance, customDistance, toys, vibe, template, game, isGenerating, isComplicating, isRefining, savedToys, heatLevel, hardLimits };
+  }, [distance, customDistance, toys, vibe, template, game, isGenerating, isComplicating, isRefining, savedToys, heatLevel, hardLimits]);
 
   // Initialize Room ID
   useEffect(() => {
@@ -227,10 +224,7 @@ function HomeContent({ session }: { session: any }) {
         if (payload.isComplicating !== undefined) setIsComplicating(payload.isComplicating);
         if (payload.isRefining !== undefined) setIsRefining(payload.isRefining);
         if (payload.heatLevel !== undefined) setHeatLevel(payload.heatLevel);
-        if (payload.atmosphaere !== undefined) setAtmosphaere(payload.atmosphaere);
-        if (payload.eskalationsstufe !== undefined) setEskalationsstufe(payload.eskalationsstufe);
         if (payload.hardLimits !== undefined) setHardLimits(payload.hardLimits);
-        if (payload.veils !== undefined) setVeils(payload.veils);
       })
       .on('broadcast', { event: 'toybox-sync' }, ({ payload }) => {
         if (payload.toys) setPartnerToys(payload.toys);
@@ -481,7 +475,7 @@ function HomeContent({ session }: { session: any }) {
       const response = await fetch('/api/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: "generate", language, distance: randomDistance, customDistance: '', toys: [randomToys, partnerToys.map(t => t.name).join(', ')].filter(Boolean).join(', '), vibe: randomVibe, template: randomTemplate, heatLevel, adminModel: adminModel || undefined, atmosphaere, eskalationsstufe, hardLimits, veils }),
+        body: JSON.stringify({ action: "generate", language, distance: randomDistance, customDistance: '', toys: [randomToys, partnerToys.map(t => t.name).join(', ')].filter(Boolean).join(', '), vibe: randomVibe, template: randomTemplate, heatLevel, adminModel: adminModel || undefined, hardLimits }),
       });
       if (!response.ok) throw new Error('Failed');
       const data = await response.json();
@@ -545,10 +539,7 @@ function HomeContent({ session }: { session: any }) {
           template,
           heatLevel,
           adminModel: adminModel || undefined,
-          atmosphaere,
-          eskalationsstufe,
           hardLimits,
-          veils,
         }),
       });
 
@@ -837,10 +828,7 @@ function HomeContent({ session }: { session: any }) {
                 onGenerate={handleGenerate} isGenerating={isGenerating} onSurprise={handleSurprise}
                 showHeatLegend={showHeatLegend} setShowHeatLegend={setShowHeatLegend}
                 broadcastState={broadcastState}
-                atmosphaere={atmosphaere} setAtmosphaere={setAtmosphaere}
-                eskalationsstufe={eskalationsstufe} setEskalationsstufe={setEskalationsstufe}
                 hardLimits={hardLimits} setHardLimits={setHardLimits}
-                veils={veils} setVeils={setVeils}
               />
             ) : (
             <GameMasterSetup
@@ -856,10 +844,7 @@ function HomeContent({ session }: { session: any }) {
               toyItems={toyItems} handleRemoveToyItem={handleRemoveToyItem} handleAddToyItem={handleAddToyItem} toysInputRef={toysInputRef} toyComment={toyComment}
               showToybox={showToybox} setShowToybox={setShowToybox}
               onGenerate={handleGenerate} isGenerating={isGenerating} onSurprise={handleSurprise}
-              atmosphaere={atmosphaere} setAtmosphaere={setAtmosphaere}
-              eskalationsstufe={eskalationsstufe} setEskalationsstufe={setEskalationsstufe}
               hardLimits={hardLimits} setHardLimits={setHardLimits}
-              veils={veils} setVeils={setVeils}
             />
             )}
 

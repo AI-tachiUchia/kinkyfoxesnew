@@ -4,8 +4,6 @@ import React from 'react';
 import { useLanguage } from "../context/LanguageContext";
 import { translations } from "../../lib/translations";
 
-const ATMOSPHAERE_OPTIONS = ["Romantisch", "Verspielt", "Spicy", "Kinky", "Rough"];
-
 export default function ClassicSetup({
   distance, setDistance,
   customDistance, setCustomDistance,
@@ -21,11 +19,7 @@ export default function ClassicSetup({
   onGenerate, isGenerating, onSurprise,
   showHeatLegend, setShowHeatLegend,
   broadcastState,
-  // New master-prompt params
-  atmosphaere, setAtmosphaere,
-  eskalationsstufe, setEskalationsstufe,
   hardLimits, setHardLimits,
-  veils, setVeils,
 }: any) {
   const { language } = useLanguage();
   const t = translations[language];
@@ -149,17 +143,8 @@ export default function ClassicSetup({
       </div>
 
       <div className="space-y-3">
-        <label className={labelCls}>Atmosphäre</label>
-        <select className={inputCls} value={atmosphaere || ""}
-          onChange={e => { setAtmosphaere(e.target.value); broadcastState({ atmosphaere: e.target.value }); }}>
-          <option value="">Überrasch mich — kreativ</option>
-          {ATMOSPHAERE_OPTIONS.map(a => <option key={a} value={a}>{a}</option>)}
-        </select>
-      </div>
-
-      <div className="space-y-3">
-        <label className={labelCls}>{t.login.atmosphereLabel} (Freitext)</label>
-        <textarea placeholder={t.login.atmospherePlaceholder || "Z.B. 'Romantisch und langsam', 'Bestrafend', 'Verspielt'..."}
+        <label className={labelCls}>{t.login.atmosphereLabel}</label>
+        <textarea placeholder={t.login.atmospherePlaceholder}
           className={`${inputCls} h-20 resize-none`}
           style={{ padding: '14px 16px' }}
           value={vibe} onChange={handleChange(setVibe, 'vibe')} />
@@ -204,13 +189,7 @@ export default function ClassicSetup({
         </div>
         {showHeatLegend && (
           <div className="bg-[#121418] border border-white/[0.08] rounded-xl p-4 space-y-2 text-xs text-gray-400">
-            {[
-              ['1 — Cozy', 'Foot rubs and prolonged eye contact. Your grandma could watch.'],
-              ['2 — Flirty', 'Compliments that are definitely flirting. Deniable, barely.'],
-              ['3 — Heated', "Things you'd google in incognito. The sweet spot."],
-              ['4 — Spicy', 'Requires a safeword check-in. The neighbours might hear.'],
-              ['5 — Unhinged', 'Please stay hydrated. You asked for this.'],
-            ].map(([label, desc]) => (
+            {(t.setup.heatLegend as string[][]).map(([label, desc]) => (
               <div key={label} className="flex gap-3">
                 <span className="text-[#d97757] font-medium shrink-0 w-24">{label}</span>
                 <span>{desc}</span>
@@ -220,43 +199,13 @@ export default function ClassicSetup({
         )}
       </div>
 
-      {/* Eskalationsstufe 1-4 */}
-      <div className="space-y-3">
-        <div className="flex items-center justify-between">
-          <label className={labelCls}>
-            Eskalationsstufe — <span style={{ color: ['#60a5fa','#a78bfa','#d97757','#dc2626'][(eskalationsstufe ?? 2) - 1], transition: 'color 0.3s' }}>
-              {["Eisbrecher","Teasing","Intensiv","Explizit"][(eskalationsstufe ?? 2) - 1]}
-            </span>
-          </label>
-        </div>
-        <input type="range" min={1} max={4} value={eskalationsstufe ?? 2}
-          onChange={e => { const v = Number(e.target.value); setEskalationsstufe(v); broadcastState({ eskalationsstufe: v }); }}
-          className="heat-slider w-full"
-          style={{ '--heat-color': ['#60a5fa','#a78bfa','#d97757','#dc2626'][(eskalationsstufe ?? 2) - 1] } as React.CSSProperties} />
-        <div className="flex justify-between text-[10px] tracking-wide px-0.5 -mt-0.5">
-          {['#60a5fa','#a78bfa','#d97757','#dc2626'].map((c, i) => (
-            <span key={i} style={{ color: (eskalationsstufe ?? 2) >= i + 1 ? c : '#4b5563', transition: 'color 0.3s', fontWeight: (eskalationsstufe ?? 2) === i + 1 ? 600 : 400 }}>
-              {i + 1}
-            </span>
-          ))}
-        </div>
-      </div>
-
-      {/* Hard Limits + Veils */}
+      {/* Hard Limits */}
       <div className="space-y-3">
         <label className={labelCls}>Hard Limits / Lines</label>
         <textarea placeholder="z.B. Keine Demütigung, kein Wachs..."
           className={`${inputCls} h-16 resize-none`} style={{ padding: '10px 14px' }}
           value={hardLimits || ""}
           onChange={e => { setHardLimits(e.target.value); broadcastState({ hardLimits: e.target.value }); }} />
-      </div>
-
-      <div className="space-y-3">
-        <label className={labelCls}>Veils (Fade-to-Black)</label>
-        <textarea placeholder="z.B. Explizite Akte nur angedeutet..."
-          className={`${inputCls} h-16 resize-none`} style={{ padding: '10px 14px' }}
-          value={veils || ""}
-          onChange={e => { setVeils(e.target.value); broadcastState({ veils: e.target.value }); }} />
       </div>
 
       <div className="space-y-2 pt-2 border-t border-white/10">

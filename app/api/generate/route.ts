@@ -164,11 +164,8 @@ export async function POST(req: Request) {
       template,
       heatLevel = 3,
       adminModel,
-      // New params
-      atmosphaere,
-      eskalationsstufe = 2,
+      // Safety rails
       hardLimits,
-      veils,
     } = body;
 
     const heatDescriptions: Record<number, string> = {
@@ -244,25 +241,17 @@ Output ONLY a JSON object:
     } else {
       // New XML-structured generate prompt
       const distanceText = distance === "custom" ? (customDistance || "Eigene Situation") : mapDistanceToText(distance);
-      const eskalationLabels: Record<number, string> = {
-        1: "1 — Grün / Eisbrecher (sanft, romantisch, kein expliziter Inhalt)",
-        2: "2 — Gelb / Teasing (angedeutet, verspielt, leichtes Flirten)",
-        3: "3 — Rot / Intensiv (klar erotisch, Machtdynamiken, explizit)",
-        4: "4 — Schwarz / Explizit (harte Machtspiele, grafisch, pusht Grenzen)",
-      };
-      const eskalationLabel = eskalationLabels[eskalationsstufe] ?? eskalationLabels[2];
       const templateText = template ? `\nSpielvorlage/Stil: "${template}" — passe das Spiel stark an diesen Stil an, bleibe aber originell.` : "";
 
       prompt = `<dynamic_parameters>
 Distanz: ${distanceText}
-Gewünschte Atmosphäre: ${atmosphaere || vibe || "Überrasch mich — sei kreativ"}
+Besondere Wünsche für Spielregeln & Atmosphäre: ${vibe || "Keine — überrasch mich, sei kreativ"}
 Verfügbare Gegenstände/Toys: ${toys || "Keine angegeben"}
-Eskalationsstufe: ${eskalationLabel}${templateText}
+${heatInstruction}${templateText}
 </dynamic_parameters>
 
 <safety_and_consent>
 HARD LIMITS (Lines): Generiere NIEMALS Inhalte zu diesen Themen: ${hardLimits || "Keine spezifischen Limits angegeben"}.
-VEILS (Fade-to-Black): Diese Themen dürfen impliziert, aber nicht explizit grafisch beschrieben werden: ${veils || "Keine spezifischen Veils angegeben"}.
 </safety_and_consent>
 
 ${FEW_SHOT_EXAMPLES}

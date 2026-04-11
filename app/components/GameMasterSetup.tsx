@@ -5,21 +5,6 @@ import { useLanguage } from "../context/LanguageContext";
 import { translations } from "../../lib/translations";
 import FoxImage from "./FoxImage";
 
-const ATMOSPHAERE_OPTIONS = [
-  { value: "Romantisch", label: "Romantisch", emoji: "🌹" },
-  { value: "Verspielt", label: "Verspielt", emoji: "🎲" },
-  { value: "Spicy", label: "Spicy", emoji: "🌶️" },
-  { value: "Kinky", label: "Kinky", emoji: "🔗" },
-  { value: "Rough", label: "Rough", emoji: "⛓️" },
-];
-
-const ESKALATION_LABELS = [
-  "1 — Grün / Eisbrecher",
-  "2 — Gelb / Teasing",
-  "3 — Rot / Intensiv",
-  "4 — Schwarz / Explizit",
-];
-
 export default function GameMasterSetup({
   distance, setDistance,
   customDistance, setCustomDistance,
@@ -36,11 +21,8 @@ export default function GameMasterSetup({
   showToybox, setShowToybox,
   // Actions
   onGenerate, isGenerating, onSurprise,
-  // New master-prompt params
-  atmosphaere, setAtmosphaere,
-  eskalationsstufe, setEskalationsstufe,
+  // Safety rails
   hardLimits, setHardLimits,
-  veils, setVeils,
 }: any) {
   const { language } = useLanguage();
   const t = translations[language];
@@ -49,7 +31,8 @@ export default function GameMasterSetup({
   const inputCls = "w-full bg-[#181c22] border border-white/[0.13] rounded-xl p-4 text-gray-200 text-sm focus:outline-none focus:ring-1 focus:ring-[#d97757]/60 focus:border-[#d97757]/40 transition-all duration-300 hover:border-white/[0.2] placeholder-gray-600";
   const labelCls = "text-[11px] font-semibold tracking-[0.18em] text-gray-400 uppercase";
 
-  const eskalationColors = ["#60a5fa", "#a78bfa", "#d97757", "#dc2626"];
+  const heatColors = ["#60a5fa", "#a78bfa", "#d97757", "#ef4444", "#dc2626"];
+  const heatLabels = t.setup.heatLevels as string[];
 
   const steps = [
     {
@@ -80,46 +63,36 @@ export default function GameMasterSetup({
       )
     },
     {
-      id: "atmosphaere",
-      foxText: "Was für eine Stimmung soll es heute sein?",
-      render: () => (
-        <div className="flex flex-col gap-3">
-          {ATMOSPHAERE_OPTIONS.map(({ value, label, emoji }) => (
-            <button key={value} onClick={() => { setAtmosphaere(value); setStep(2); }}
-              className={`p-4 border rounded-xl transition-all text-left flex items-center gap-3 ${atmosphaere === value ? 'bg-[#d97757]/20 border-[#d97757] text-white' : 'bg-[#181c22] border-white/10 hover:border-[#d97757]/50 text-gray-300'}`}>
-              <span className="text-xl">{emoji}</span>
-              <span className="font-medium">{label}</span>
-            </button>
-          ))}
-        </div>
-      )
-    },
-    {
-      id: "eskalation",
-      foxText: "Und wie weit soll es heute gehen?",
-      render: () => (
-        <div className="flex flex-col gap-6 items-center pt-2">
-          <div className="text-center">
-            <div className="font-bold text-lg uppercase tracking-widest" style={{ color: eskalationColors[(eskalationsstufe ?? 2) - 1] }}>
-              {ESKALATION_LABELS[(eskalationsstufe ?? 2) - 1]}
+      id: "heat",
+      foxText: "Und wie heiß soll es heute werden?",
+      render: () => {
+        const idx = Math.max(1, Math.min(5, heatLevel || 3)) - 1;
+        const color = heatColors[idx];
+        return (
+          <div className="flex flex-col gap-6 items-center pt-2">
+            <div className="text-center">
+              <div className="font-bold text-lg uppercase tracking-widest" style={{ color }}>
+                {idx + 1} — {heatLabels[idx]}
+              </div>
+              <div className="text-xs text-gray-500 mt-1 max-w-[280px]">
+                {(t.setup.heatLegend as string[][])[idx]?.[1]}
+              </div>
             </div>
-            <div className="text-xs text-gray-500 mt-1">
-              {["Sanft, kein expliziter Inhalt", "Verspielt, leichtes Teasing", "Klar erotisch, Machtdynamiken", "Harte Machtspiele, explizit"][(eskalationsstufe ?? 2) - 1]}
+            <input type="range" min={1} max={5} value={heatLevel || 3}
+              onChange={e => setHeatLevel(Number(e.target.value))}
+              className="w-full heat-slider"
+              style={{ '--heat-color': color } as React.CSSProperties} />
+            <div className="flex justify-between w-full text-[10px] tracking-wide px-0.5 -mt-3">
+              {heatColors.map((c, i) => (
+                <span key={i} style={{ color: (heatLevel || 3) >= i + 1 ? c : '#4b5563', fontWeight: (heatLevel || 3) === i + 1 ? 600 : 400 }}>
+                  {i + 1}
+                </span>
+              ))}
             </div>
+            <button onClick={() => setStep(2)} className="w-full p-3 bg-[#d97757] hover:bg-[#e08568] text-[#121418] font-bold rounded-xl transition-all mt-2 shadow-[0_2px_10px_rgba(217,119,87,0.2)]">Weiter</button>
           </div>
-          <input type="range" min={1} max={4} value={eskalationsstufe ?? 2}
-            onChange={e => setEskalationsstufe(Number(e.target.value))}
-            className="w-full heat-slider" />
-          <div className="flex justify-between w-full text-[10px] tracking-wide px-0.5 -mt-3">
-            {eskalationColors.map((c, i) => (
-              <span key={i} style={{ color: (eskalationsstufe ?? 2) >= i + 1 ? c : '#4b5563', fontWeight: (eskalationsstufe ?? 2) === i + 1 ? 600 : 400 }}>
-                {i + 1}
-              </span>
-            ))}
-          </div>
-          <button onClick={() => setStep(3)} className="w-full p-3 bg-[#d97757] hover:bg-[#e08568] text-[#121418] font-bold rounded-xl transition-all mt-2 shadow-[0_2px_10px_rgba(217,119,87,0.2)]">Weiter</button>
-        </div>
-      )
+        );
+      }
     },
     {
       id: "toys",
@@ -214,66 +187,69 @@ export default function GameMasterSetup({
               )}
             </div>
           </div>
-          <button onClick={() => setStep(4)} className="w-full p-3 bg-[#d97757] hover:bg-[#e08568] text-[#121418] font-bold rounded-xl transition-all mt-2 shadow-[0_2px_10px_rgba(217,119,87,0.2)]">Weiter</button>
+          <button onClick={() => setStep(3)} className="w-full p-3 bg-[#d97757] hover:bg-[#e08568] text-[#121418] font-bold rounded-xl transition-all mt-2 shadow-[0_2px_10px_rgba(217,119,87,0.2)]">Weiter</button>
         </div>
       )
     },
     {
-      id: "limits",
-      foxText: "Gibt es Grenzen, die ich respektieren soll?",
+      id: "wishes",
+      foxText: "Gibt es besondere Wünsche — oder Grenzen, die ich respektieren soll?",
       render: () => (
         <div className="flex flex-col gap-5">
+          <div className="space-y-2">
+            <label className={labelCls}>{t.login.atmosphereLabel}</label>
+            <textarea
+              value={vibe || ""}
+              onChange={e => setVibe(e.target.value)}
+              placeholder={t.login.atmospherePlaceholder}
+              className={`${inputCls} h-24 resize-none`}
+            />
+          </div>
           <div className="space-y-2">
             <label className={labelCls}>Hard Limits / Lines</label>
             <p className="text-[11px] text-gray-500">Themen, die niemals generiert werden sollen. (z.B. "Keine Demütigung", "Kein Schmerz")</p>
             <textarea
-              value={hardLimits}
+              value={hardLimits || ""}
               onChange={e => setHardLimits(e.target.value)}
               placeholder="z.B. Keine Demütigung, kein Wachs..."
               className={`${inputCls} h-20 resize-none`}
             />
           </div>
-          <div className="space-y-2">
-            <label className={labelCls}>Veils (Fade-to-Black)</label>
-            <p className="text-[11px] text-gray-500">Themen, die impliziert aber nicht explizit beschrieben werden. (z.B. "Penetration nur angedeutet")</p>
-            <textarea
-              value={veils}
-              onChange={e => setVeils(e.target.value)}
-              placeholder="z.B. Explizite Akte nur angedeutet..."
-              className={`${inputCls} h-20 resize-none`}
-            />
-          </div>
-          <button onClick={() => setStep(5)} className="w-full p-3 bg-[#d97757] hover:bg-[#e08568] text-[#121418] font-bold rounded-xl transition-all shadow-[0_2px_10px_rgba(217,119,87,0.2)]">Weiter</button>
+          <button onClick={() => setStep(4)} className="w-full p-3 bg-[#d97757] hover:bg-[#e08568] text-[#121418] font-bold rounded-xl transition-all shadow-[0_2px_10px_rgba(217,119,87,0.2)]">Weiter</button>
         </div>
       )
     },
     {
       id: "summary",
       foxText: "Alles klar. Ich habe alles, was ich brauche. Bereit?",
-      render: () => (
-        <div className="space-y-4 pt-2">
-          {/* Summary pills */}
-          <div className="flex flex-wrap gap-2 text-xs text-gray-400">
-            {distance && <span className="px-3 py-1 bg-white/5 rounded-full border border-white/10">{distance === "same-room" ? "Im selben Raum" : distance === "video" ? "Videochat" : distance === "text" ? "Text-Only" : customDistance || distance}</span>}
-            {atmosphaere && <span className="px-3 py-1 bg-[#d97757]/10 rounded-full border border-[#d97757]/20 text-[#d97757]">{atmosphaere}</span>}
-            {eskalationsstufe && <span className="px-3 py-1 bg-white/5 rounded-full border border-white/10">Stufe {eskalationsstufe}</span>}
-            {toyItems?.length > 0 && <span className="px-3 py-1 bg-white/5 rounded-full border border-white/10">{toyItems.length} Toys</span>}
+      render: () => {
+        const idx = Math.max(1, Math.min(5, heatLevel || 3)) - 1;
+        return (
+          <div className="space-y-4 pt-2">
+            {/* Summary pills */}
+            <div className="flex flex-wrap gap-2 text-xs text-gray-400">
+              {distance && <span className="px-3 py-1 bg-white/5 rounded-full border border-white/10">{distance === "same-room" ? "Im selben Raum" : distance === "video" ? "Videochat" : distance === "text" ? "Text-Only" : customDistance || distance}</span>}
+              <span className="px-3 py-1 bg-[#d97757]/10 rounded-full border border-[#d97757]/20 text-[#d97757]">
+                {heatLabels[idx]}
+              </span>
+              {toyItems?.length > 0 && <span className="px-3 py-1 bg-white/5 rounded-full border border-white/10">{toyItems.length} Toys</span>}
+            </div>
+
+            <button onClick={onGenerate} disabled={isGenerating}
+              className="w-full p-4 bg-[#d97757] hover:bg-[#e08568] text-[#121418] font-bold text-lg rounded-xl transition-all shadow-[0_0_20px_rgba(217,119,87,0.4)] disabled:opacity-50 flex items-center justify-center gap-2">
+              {isGenerating ? (
+                <svg className="animate-spin h-5 w-5 text-[#121418]" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+              ) : '🔥'}
+              {isGenerating ? t.setup.generatingButton : t.setup.generateButton}
+            </button>
+
+            <button onClick={onSurprise} disabled={isGenerating}
+              className="w-full p-3 bg-white/5 hover:bg-white/10 text-gray-300 font-bold rounded-xl border border-white/10 transition-all flex items-center justify-center gap-2">
+              🎲 {t.setup.surpriseMeButton}
+            </button>
           </div>
-
-          <button onClick={onGenerate} disabled={isGenerating}
-            className="w-full p-4 bg-[#d97757] hover:bg-[#e08568] text-[#121418] font-bold text-lg rounded-xl transition-all shadow-[0_0_20px_rgba(217,119,87,0.4)] disabled:opacity-50 flex items-center justify-center gap-2">
-            {isGenerating ? (
-              <svg className="animate-spin h-5 w-5 text-[#121418]" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-            ) : '🔥'}
-            {isGenerating ? t.setup.generatingButton : t.setup.generateButton}
-          </button>
-
-          <button onClick={onSurprise} disabled={isGenerating}
-            className="w-full p-3 bg-white/5 hover:bg-white/10 text-gray-300 font-bold rounded-xl border border-white/10 transition-all flex items-center justify-center gap-2">
-            🎲 {t.setup.surpriseMeButton}
-          </button>
-        </div>
-      )
+        );
+      }
     }
   ];
 
