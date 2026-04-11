@@ -2,6 +2,42 @@
 
 ---
 
+## 2026-04-12 — Fixes: Remove ClassicSetup, Login A11y, Fox Graphics, QR Codes
+
+**Commits:** `f0fda89`, `347bc3c` on `main` — pushed to GitHub, deployed via Vercel.
+**Issues closed:** #15, #14, #5, #13
+
+### #15 — ClassicSetup entfernt
+- Altes Formular-basiertes Setup (`ClassicSetup`) komplett entfernt: Import, `useClassic`-State, `showHeatLegend`-State und den Toggle-Button.
+- `GameMasterSetup` ist jetzt der einzige Setup-Flow.
+- **File:** `app/page.tsx`
+
+### #14 — Accessibility: Login-Inputs mit HTML-Labels
+- `<label htmlFor="login-email">` + `id="login-email"` auf das E-Mail-Feld.
+- `<label htmlFor="login-password">` + `id="login-password"` auf das Passwort-Feld.
+- Behebt PageSpeed Accessibility-Warnung.
+- **File:** `app/page.tsx`
+
+### #5 — Fox-Grafiken mit farbigem Hintergrund ersetzt
+- 6 Fox-Images hatten solide weiße/graue/beige Hintergründe, die auf dem dunklen UI störend aussahen.
+- Ersetzt durch transparente Versionen die bereits im Assets-Ordner lagen:
+  - `costume_stewardess`: `fox_costume_stewardess.png`
+  - `worship`: `fox_worship_kneel.png`
+  - `sexy_fotos` + `selfie`: `fox_mirror_selfie.png`
+  - `spanking`: `fox_pixel_spanking.png` (Pixel-Art, bekommt automatisch korrekte Darstellung)
+  - `nurse`: `fox_nurse_patient.png`
+- **File:** `app/components/FoxImage.tsx`
+
+### #13 — QR-Code ZXing-Kompatibilität
+- QR-Code-Generierung (via `api.qrserver.com`) umgestellt:
+  - `format`: `svg` → `png` (SVG wird von einigen ZXing-Builds nicht korrekt geparst)
+  - Farben: Orange-auf-Dunkel (`#d97757` / `#121418`) → Dunkel-auf-Weiß (`#1a1d23` / `#ffffff`) für maximalen Kontrast
+  - `ecc`: nicht gesetzt → `Q` (25% Fehlerkorrektur)
+- Optisch kein Unterschied für den User (QR liegt bereits in weißem Container).
+- **File:** `app/components/PartnerStatus.tsx`
+
+---
+
 ## 2026-04-11 — Fix: Dice roll mechanic restored under new XML prompt
 
 **Commit:** `b62d049` on `main` — pushed to github.com/AI-tachiUchia/kinkyfoxesnew, deployed via Vercel. **Verified working in prod by Tim.**
