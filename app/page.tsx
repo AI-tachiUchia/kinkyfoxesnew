@@ -120,6 +120,9 @@ function HomeContent({ session }: { session: any }) {
   const [vibe, setVibe] = useState("");
   const [template, setTemplate] = useState("");
   const [heatLevel, setHeatLevel] = useState(3);
+  // Tracks whether the user has explicitly moved the heat slider this session.
+  // Until touched, we don't broadcast heatLevel so the partner's gate stays closed.
+  const heatTouched = useRef(false);
   // Safety rail — survived prompt-master-update simplification (2026-04-11)
   const [hardLimits, setHardLimits] = useState("");
   const [game, setGame] = useState<GeneratedGame | null>(null);
@@ -270,7 +273,7 @@ function HomeContent({ session }: { session: any }) {
         newChannel.send({
           type: 'broadcast',
           event: 'player-settings',
-          payload: { distance: currentState.distance, heatLevel: currentState.heatLevel }
+          payload: { distance: currentState.distance, ...(heatTouched.current ? { heatLevel: currentState.heatLevel } : {}) }
         });
         if (currentState.savedToys.length > 0) {
           newChannel.send({
@@ -308,7 +311,7 @@ function HomeContent({ session }: { session: any }) {
           newChannel.send({
             type: 'broadcast',
             event: 'player-settings',
-            payload: { distance: stateRef.current.distance, heatLevel: stateRef.current.heatLevel }
+            payload: { distance: stateRef.current.distance, ...(heatTouched.current ? { heatLevel: stateRef.current.heatLevel } : {}) }
           });
         }
       })
@@ -331,10 +334,12 @@ function HomeContent({ session }: { session: any }) {
           });
           // Share our initial distance/heat now that the channel is live.
           // The useEffect-based broadcasts fire before SUBSCRIBED so they get dropped.
+          // Note: heatLevel is only included if the user has explicitly touched the slider,
+          // so the partner's gate stays closed until a real choice is made.
           newChannel.send({
             type: 'broadcast',
             event: 'player-settings',
-            payload: { distance: stateRef.current.distance, heatLevel: stateRef.current.heatLevel }
+            payload: { distance: stateRef.current.distance, ...(heatTouched.current ? { heatLevel: stateRef.current.heatLevel } : {}) }
           });
         }
       });
@@ -884,7 +889,7 @@ function HomeContent({ session }: { session: any }) {
             <GameMasterSetup
               distance={distance} setDistance={setDistance}
               customDistance={customDistance} setCustomDistance={setCustomDistance}
-              heatLevel={heatLevel} setHeatLevel={setHeatLevel}
+              heatLevel={heatLevel} setHeatLevel={(v: number) => { heatTouched.current = true; setHeatLevel(v); }}
               vibe={vibe} setVibe={setVibe}
               template={template} setTemplate={setTemplate}
               toys={toys} setToys={setToys}
