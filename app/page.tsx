@@ -215,8 +215,17 @@ function HomeContent({ session }: { session: any }) {
         if (payload.toys !== undefined) setToys(payload.toys);
         if (payload.vibe !== undefined) setVibe(payload.vibe);
         if (payload.template !== undefined) setTemplate(payload.template);
-        if (payload.game !== undefined) setGame(payload.game);
-        if (payload.isGenerating !== undefined) setIsGenerating(payload.isGenerating);
+        if (payload.game !== undefined) {
+          setGame(payload.game);
+          if (payload.game) {
+            setOpenSections(new Set([0]));
+            transitionTo('game');
+          }
+        }
+        if (payload.isGenerating !== undefined) {
+          setIsGenerating(payload.isGenerating);
+          if (payload.isGenerating) transitionTo('generating');
+        }
         if (payload.isComplicating !== undefined) setIsComplicating(payload.isComplicating);
         if (payload.isRefining !== undefined) setIsRefining(payload.isRefining);
         if (payload.heatLevel !== undefined) setHeatLevel(payload.heatLevel);
