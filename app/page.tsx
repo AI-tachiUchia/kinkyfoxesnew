@@ -173,6 +173,9 @@ function HomeContent({ session }: { session: any }) {
   const [partnerToys, setPartnerToys] = useState<Toy[]>([]);
   const [channel, setChannel] = useState<any>(null);
 
+  // Multiplayer negotiation: partner's live distance/heat choices (display only)
+  const [partnerSettings, setPartnerSettings] = useState<{ distance: string; heatLevel: number | null }>({ distance: '', heatLevel: null });
+
   // Presence & activity
   const [partnerName, setPartnerName] = useState<string | null>(null);
   const [partnerOnline, setPartnerOnline] = useState(false);
@@ -210,7 +213,7 @@ function HomeContent({ session }: { session: any }) {
 
     newChannel
       .on('broadcast', { event: 'state-sync' }, ({ payload }) => {
-        if (payload.distance !== undefined) setDistance(payload.distance);
+        // distance and heatLevel are negotiated per-player — not overwritten from partner
         if (payload.customDistance !== undefined) setCustomDistance(payload.customDistance);
         if (payload.toys !== undefined) setToys(payload.toys);
         if (payload.vibe !== undefined) setVibe(payload.vibe);
@@ -228,21 +231,32 @@ function HomeContent({ session }: { session: any }) {
         }
         if (payload.isComplicating !== undefined) setIsComplicating(payload.isComplicating);
         if (payload.isRefining !== undefined) setIsRefining(payload.isRefining);
-        if (payload.heatLevel !== undefined) setHeatLevel(payload.heatLevel);
         if (payload.hardLimits !== undefined) setHardLimits(payload.hardLimits);
+      })
+      .on('broadcast', { event: 'player-settings' }, ({ payload }) => {
+        setPartnerSettings(prev => ({
+          distance: payload.distance !== undefined ? payload.distance : prev.distance,
+          heatLevel: payload.heatLevel !== undefined ? payload.heatLevel : prev.heatLevel,
+        }));
       })
       .on('broadcast', { event: 'toybox-sync' }, ({ payload }) => {
         if (payload.toys) setPartnerToys(payload.toys);
       })
       .on('broadcast', { event: 'request-sync' }, () => {
         const currentState = stateRef.current;
-        if (currentState.distance || currentState.customDistance || currentState.toys || currentState.vibe || currentState.template || currentState.game || currentState.isGenerating || currentState.isComplicating || currentState.isRefining) {
+        if (currentState.customDistance || currentState.toys || currentState.vibe || currentState.template || currentState.game || currentState.isGenerating || currentState.isComplicating || currentState.isRefining) {
           newChannel.send({
             type: 'broadcast',
             event: 'state-sync',
             payload: currentState
           });
         }
+        // Always share our current distance/heat for negotiation display
+        newChannel.send({
+          type: 'broadcast',
+          event: 'player-settings',
+          payload: { distance: currentState.distance, heatLevel: currentState.heatLevel }
+        });
         if (currentState.savedToys.length > 0) {
           newChannel.send({
             type: 'broadcast',
@@ -361,6 +375,17 @@ function HomeContent({ session }: { session: any }) {
       });
     }
   }, [savedToys, channel]);
+
+  // Broadcast local distance/heat for partner negotiation display
+  useEffect(() => {
+    if (!channel) return;
+    channel.send({ type: 'broadcast', event: 'player-settings', payload: { distance } });
+  }, [distance, channel]);
+
+  useEffect(() => {
+    if (!channel) return;
+    channel.send({ type: 'broadcast', event: 'player-settings', payload: { heatLevel } });
+  }, [heatLevel, channel]);
 
   function parseItemsFromText(input: string): string[] {
     return input
@@ -518,16 +543,34 @@ function HomeContent({ session }: { session: any }) {
     }
   };
 
+  // Resolve distance: if both chose the same (or solo), use it; otherwise pick deterministically
+  const resolveDistance = (myDist: string, partnerDist: string, isPartnerOnline: boolean): string => {
+    if (!isPartnerOnline || !partnerDist || myDist === partnerDist) return myDist || partnerDist;
+    const hash = [...(roomId + 'distance')].reduce((acc, c) => acc + c.charCodeAt(0), 0);
+    return hash % 2 === 0 ? myDist : partnerDist;
+  };
+
+  // Resolve heat: average if integer, otherwise pick A or B deterministically
+  const resolveHeatLevel = (myHeat: number, partnerHeat: number | null, isPartnerOnline: boolean): number => {
+    if (!isPartnerOnline || partnerHeat === null) return myHeat;
+    const avg = (myHeat + partnerHeat) / 2;
+    if (Number.isInteger(avg)) return avg;
+    const hash = [...(roomId + 'heat')].reduce((acc, c) => acc + c.charCodeAt(0), 0);
+    return hash % 2 === 0 ? myHeat : partnerHeat;
+  };
+
   const handleBackToSetup = () => {
     transitionTo('setup');
   };
 
   const handleGenerate = async () => {
+    const finalDistance = resolveDistance(distance, partnerSettings.distance, partnerOnline);
+    const finalHeat = resolveHeatLevel(heatLevel, partnerSettings.heatLevel, partnerOnline);
     setIsGenerating(true);
     setGame(null);
     transitionTo('generating');
     broadcastState({ game: null, isGenerating: true });
-    
+
     try {
       const response = await fetch('/api/generate', {
         method: 'POST',
@@ -537,12 +580,12 @@ function HomeContent({ session }: { session: any }) {
         body: JSON.stringify({
           action: "generate",
           language,
-          distance,
+          distance: finalDistance,
           customDistance,
           toys: [toys, partnerToys.map(t => t.name).join(', ')].filter(Boolean).join(', '),
           vibe,
           template,
-          heatLevel,
+          heatLevel: finalHeat,
           adminModel: adminModel || undefined,
           hardLimits,
         }),
@@ -817,6 +860,9 @@ function HomeContent({ session }: { session: any }) {
               showToybox={showToybox} setShowToybox={setShowToybox}
               onGenerate={handleGenerate} isGenerating={isGenerating} onSurprise={handleSurprise}
               hardLimits={hardLimits} setHardLimits={setHardLimits}
+              partnerOnline={partnerOnline} partnerName={partnerName}
+              partnerSettings={partnerSettings}
+              resolveDistance={resolveDistance} resolveHeatLevel={resolveHeatLevel}
             />
 
             <div className="w-full pt-1 animate-fade-in">

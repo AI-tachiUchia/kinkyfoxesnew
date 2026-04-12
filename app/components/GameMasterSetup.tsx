@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useLanguage } from "../context/LanguageContext";
 import { translations } from "../../lib/translations";
 import FoxImage from "./FoxImage";
@@ -23,10 +23,42 @@ export default function GameMasterSetup({
   onGenerate, isGenerating, onSurprise,
   // Safety rails
   hardLimits, setHardLimits,
+  // Multiplayer negotiation
+  partnerOnline, partnerName, partnerSettings,
+  resolveDistance, resolveHeatLevel,
 }: any) {
   const { language } = useLanguage();
   const t = translations[language];
   const [step, setStep] = useState(0);
+
+  // Delay the straw button: only show after 10s of continuous distance disagreement
+  const [showStrawButton, setShowStrawButton] = useState(false);
+  const strawTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    const partnerDist = partnerSettings?.distance || '';
+    const bothChose = partnerOnline && distance && partnerDist;
+    const disagree = bothChose && distance !== partnerDist;
+
+    if (disagree) {
+      if (!strawTimerRef.current) {
+        strawTimerRef.current = setTimeout(() => setShowStrawButton(true), 10000);
+      }
+    } else {
+      if (strawTimerRef.current) {
+        clearTimeout(strawTimerRef.current);
+        strawTimerRef.current = null;
+      }
+      setShowStrawButton(false);
+    }
+
+    return () => {
+      if (strawTimerRef.current) {
+        clearTimeout(strawTimerRef.current);
+        strawTimerRef.current = null;
+      }
+    };
+  }, [distance, partnerSettings?.distance, partnerOnline]);
 
   const inputCls = "w-full bg-[#181c22] border border-white/[0.13] rounded-xl p-4 text-gray-200 text-sm focus:outline-none focus:ring-1 focus:ring-[#d97757]/60 focus:border-[#d97757]/40 transition-all duration-300 hover:border-white/[0.2] placeholder-gray-600";
   const labelCls = "text-[11px] font-semibold tracking-[0.18em] text-gray-400 uppercase";
@@ -38,29 +70,73 @@ export default function GameMasterSetup({
     {
       id: "distance",
       foxText: "Lass uns ein Spiel spielen... Wo seid ihr gerade?",
-      render: () => (
-        <div className="flex flex-col gap-3">
-          {[
-            { val: "same-room", emoji: "🛋️", label: "Im selben Raum" },
-            { val: "video",     emoji: "📹", label: "Videochat / Long-Distance" },
-            { val: "text",      emoji: "💬", label: "Text-Only / Chat" },
-            { val: "custom",    emoji: "✏️", label: t.login.optCustom },
-          ].map(({ val, emoji, label }) => (
-            <button key={val} onClick={() => { setDistance(val); if (val !== "custom") setStep(1); }}
-              className={`p-4 border rounded-xl transition-all text-left flex items-center gap-3 ${distance === val ? 'bg-[#d97757]/20 border-[#d97757] text-white' : 'bg-[#181c22] border-white/10 hover:border-[#d97757]/50 text-gray-300'}`}>
-              <span className="text-xl">{emoji}</span>
-              <span>{label}</span>
-            </button>
-          ))}
-          {distance === 'custom' && (
-            <div className="mt-2 animate-fade-in">
-              <input type="text" placeholder={t.login.customSetupPlaceholder} className={inputCls}
-                value={customDistance} onChange={e => setCustomDistance(e.target.value)} />
-              <button onClick={() => setStep(1)} className="mt-3 w-full p-3 bg-white/10 hover:bg-white/20 text-white font-bold rounded-xl">Weiter</button>
-            </div>
-          )}
-        </div>
-      )
+      render: () => {
+        const distanceOptions = [
+          { val: "same-room", emoji: "🛋️", label: "Im selben Raum" },
+          { val: "video",     emoji: "📹", label: "Videochat / Long-Distance" },
+          { val: "text",      emoji: "💬", label: "Text-Only / Chat" },
+          { val: "custom",    emoji: "✏️", label: t.login.optCustom },
+        ];
+        const partnerDist = partnerSettings?.distance || '';
+        const bothChose = partnerOnline && distance && partnerDist;
+        const agree = !partnerOnline || !partnerDist || distance === partnerDist;
+        return (
+          <div className="flex flex-col gap-3">
+            {distanceOptions.map(({ val, emoji, label }) => {
+              const isMyChoice = distance === val;
+              const isPartnerChoice = partnerOnline && partnerDist === val;
+              return (
+                <button key={val} onClick={() => { setDistance(val); if (val !== "custom" && agree) setStep(1); }}
+                  className={`p-4 border rounded-xl transition-all text-left flex items-center gap-3 ${isMyChoice ? 'bg-[#d97757]/20 border-[#d97757] text-white' : 'bg-[#181c22] border-white/10 hover:border-[#d97757]/50 text-gray-300'}`}>
+                  <span className="text-xl">{emoji}</span>
+                  <span className="flex-1">{label}</span>
+                  {isPartnerChoice && (
+                    <span className="text-[10px] font-medium tracking-wide px-2 py-1 rounded-full bg-purple-500/20 border border-purple-400/30 text-purple-300 shrink-0">
+                      🦊 {partnerName || 'Partner'}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+            {distance === 'custom' && (
+              <div className="mt-2 animate-fade-in">
+                <input type="text" placeholder={t.login.customSetupPlaceholder} className={inputCls}
+                  value={customDistance} onChange={e => setCustomDistance(e.target.value)} />
+                <button onClick={() => setStep(1)} className="mt-3 w-full p-3 bg-white/10 hover:bg-white/20 text-white font-bold rounded-xl">Weiter</button>
+              </div>
+            )}
+            {/* Partner negotiation status */}
+            {partnerOnline && !partnerDist && (
+              <p className="text-center text-xs text-gray-500 italic animate-pulse pt-1">
+                🦊 {partnerName || 'Partner'} wählt noch...
+              </p>
+            )}
+            {bothChose && !agree && distance !== 'custom' && (
+              <div className="mt-1 p-3 rounded-xl bg-purple-500/10 border border-purple-400/20 text-center space-y-2">
+                <p className="text-xs text-purple-300">
+                  {showStrawButton
+                    ? "Ihr seid euch nicht einig — wer entscheidet?"
+                    : "Ihr seid euch (noch) nicht einig..."}
+                </p>
+                {showStrawButton && (
+                  <button
+                    onClick={() => {
+                      const resolved = resolveDistance(distance, partnerDist, true);
+                      setDistance(resolved);
+                      setStep(1);
+                    }}
+                    className="w-full px-4 py-2.5 bg-purple-500/20 hover:bg-purple-500/30 border border-purple-400/30 text-purple-200 text-sm font-semibold rounded-xl transition-all animate-fade-in">
+                    🎲 Zufalls-Entscheid
+                  </button>
+                )}
+              </div>
+            )}
+            {distance && agree && distance !== 'custom' && (
+              <button onClick={() => setStep(1)} className="mt-1 w-full p-3 bg-[#d97757] hover:bg-[#e08568] text-[#121418] font-bold rounded-xl transition-all shadow-[0_2px_10px_rgba(217,119,87,0.2)]">Weiter</button>
+            )}
+          </div>
+        );
+      }
     },
     {
       id: "heat",
@@ -68,6 +144,11 @@ export default function GameMasterSetup({
       render: () => {
         const idx = Math.max(1, Math.min(5, heatLevel || 3)) - 1;
         const color = heatColors[idx];
+        const partnerHeat = partnerSettings?.heatLevel;
+        const agreedHeat = partnerOnline && partnerHeat !== null
+          ? resolveHeatLevel(heatLevel || 3, partnerHeat, true)
+          : null;
+        const agreedIdx = agreedHeat !== null ? agreedHeat - 1 : null;
         return (
           <div className="flex flex-col gap-6 items-center pt-2">
             <div className="text-center">
@@ -78,17 +159,36 @@ export default function GameMasterSetup({
                 {(t.setup.heatLegend as string[][])[idx]?.[1]}
               </div>
             </div>
-            <input type="range" min={1} max={5} value={heatLevel || 3}
-              onChange={e => setHeatLevel(Number(e.target.value))}
-              className="w-full heat-slider"
-              style={{ '--heat-color': color } as React.CSSProperties} />
-            <div className="flex justify-between w-full text-[10px] tracking-wide px-0.5 -mt-3">
+            <div className="w-full relative">
+              <input type="range" min={1} max={5} value={heatLevel || 3}
+                onChange={e => setHeatLevel(Number(e.target.value))}
+                className="w-full heat-slider"
+                style={{ '--heat-color': color } as React.CSSProperties} />
+              {/* Partner position indicator */}
+              {partnerOnline && partnerHeat !== null && (
+                <div
+                  className="absolute -bottom-5 text-[10px] text-purple-300 flex items-center gap-0.5 pointer-events-none"
+                  style={{ left: `calc(${((partnerHeat - 1) / 4) * 100}% - 12px)` }}>
+                  🦊
+                </div>
+              )}
+            </div>
+            <div className="flex justify-between w-full text-[10px] tracking-wide px-0.5 -mt-1">
               {heatColors.map((c, i) => (
                 <span key={i} style={{ color: (heatLevel || 3) >= i + 1 ? c : '#4b5563', fontWeight: (heatLevel || 3) === i + 1 ? 600 : 400 }}>
                   {i + 1}
                 </span>
               ))}
             </div>
+            {/* Agreed heat preview */}
+            {agreedHeat !== null && agreedHeat !== (heatLevel || 3) && (
+              <div className="w-full px-3 py-2 rounded-xl bg-purple-500/10 border border-purple-400/20 flex items-center justify-between text-xs">
+                <span className="text-gray-400">Gemeinsame Entscheidung:</span>
+                <span className="font-semibold" style={{ color: heatColors[agreedIdx!] }}>
+                  Stufe {agreedHeat} — {heatLabels[agreedIdx!]}
+                </span>
+              </div>
+            )}
             <button onClick={() => setStep(2)} className="w-full p-3 bg-[#d97757] hover:bg-[#e08568] text-[#121418] font-bold rounded-xl transition-all mt-2 shadow-[0_2px_10px_rgba(217,119,87,0.2)]">Weiter</button>
           </div>
         );
@@ -223,17 +323,39 @@ export default function GameMasterSetup({
       id: "summary",
       foxText: "Alles klar. Ich habe alles, was ich brauche. Bereit?",
       render: () => {
-        const idx = Math.max(1, Math.min(5, heatLevel || 3)) - 1;
+        const partnerHeat = partnerSettings?.heatLevel;
+        const partnerDist = partnerSettings?.distance || '';
+        const finalHeat = partnerOnline && partnerHeat !== null
+          ? resolveHeatLevel(heatLevel || 3, partnerHeat, true)
+          : (heatLevel || 3);
+        const finalDist = partnerOnline && partnerDist
+          ? resolveDistance(distance, partnerDist, true)
+          : distance;
+        const finalIdx = Math.max(0, Math.min(4, finalHeat - 1));
+        const distLabel = finalDist === "same-room" ? "Im selben Raum" : finalDist === "video" ? "Videochat" : finalDist === "text" ? "Text-Only" : customDistance || finalDist;
         return (
           <div className="space-y-4 pt-2">
-            {/* Summary pills */}
+            {/* Summary pills — shows resolved/agreed values */}
             <div className="flex flex-wrap gap-2 text-xs text-gray-400">
-              {distance && <span className="px-3 py-1 bg-white/5 rounded-full border border-white/10">{distance === "same-room" ? "Im selben Raum" : distance === "video" ? "Videochat" : distance === "text" ? "Text-Only" : customDistance || distance}</span>}
+              {finalDist && <span className="px-3 py-1 bg-white/5 rounded-full border border-white/10">{distLabel}</span>}
               <span className="px-3 py-1 bg-[#d97757]/10 rounded-full border border-[#d97757]/20 text-[#d97757]">
-                {heatLabels[idx]}
+                {heatLabels[finalIdx]}
               </span>
               {toyItems?.length > 0 && <span className="px-3 py-1 bg-white/5 rounded-full border border-white/10">{toyItems.length} Toys</span>}
             </div>
+            {/* Negotiation summary when partner is online and values differ */}
+            {partnerOnline && partnerDist && partnerDist !== distance && (
+              <div className="text-[11px] text-purple-300/70 bg-purple-500/5 border border-purple-400/10 rounded-xl px-3 py-2 space-y-0.5">
+                <div>📍 Du: {distance === "same-room" ? "Im selben Raum" : distance === "video" ? "Videochat" : distance === "text" ? "Text-Only" : customDistance || distance} · 🦊 {partnerName || 'Partner'}: {partnerDist === "same-room" ? "Im selben Raum" : partnerDist === "video" ? "Videochat" : partnerDist === "text" ? "Text-Only" : partnerDist}</div>
+                <div>→ Zufalls-Entscheid: <span className="text-purple-200 font-medium">{distLabel}</span></div>
+              </div>
+            )}
+            {partnerOnline && partnerHeat !== null && partnerHeat !== (heatLevel || 3) && (
+              <div className="text-[11px] text-purple-300/70 bg-purple-500/5 border border-purple-400/10 rounded-xl px-3 py-2 space-y-0.5">
+                <div>🌡 Du: Stufe {heatLevel} · 🦊 {partnerName || 'Partner'}: Stufe {partnerHeat}</div>
+                <div>→ Mittelwert: <span className="text-purple-200 font-medium">Stufe {finalHeat} — {heatLabels[finalIdx]}</span></div>
+              </div>
+            )}
 
             <button onClick={onGenerate} disabled={isGenerating}
               className="w-full p-4 bg-[#d97757] hover:bg-[#e08568] text-[#121418] font-bold text-lg rounded-xl transition-all shadow-[0_0_20px_rgba(217,119,87,0.4)] disabled:opacity-50 flex items-center justify-center gap-2">
