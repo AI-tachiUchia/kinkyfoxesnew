@@ -201,11 +201,21 @@ function HomeContent({ session }: { session: any }) {
   }, [distance, customDistance, toys, vibe, template, game, isGenerating, isComplicating, isRefining, savedToys, heatLevel, hardLimits]);
 
   // Initialize Room ID
+  // If the URL already has a ?room= param (e.g. partner shared a link), use it and
+  // persist it to sessionStorage so a refresh in this tab rejoins the same room.
+  // If there is no URL param, check sessionStorage first before generating a new ID —
+  // this prevents a refresh from silently moving the player to a brand-new empty room
+  // while their partner still sees them as "online" in the old one (ghost session).
   useEffect(() => {
-    if (!roomId) {
-      const newRoomId = Math.random().toString(36).substring(2, 9);
+    if (roomId) {
+      // URL has a room — persist it so a refresh rejoins here.
+      sessionStorage.setItem('foxRoomId', roomId);
+    } else {
+      const saved = sessionStorage.getItem('foxRoomId');
+      const resolvedId = saved || Math.random().toString(36).substring(2, 9);
+      if (!saved) sessionStorage.setItem('foxRoomId', resolvedId);
       const params = new URLSearchParams(window.location.search);
-      params.set('room', newRoomId);
+      params.set('room', resolvedId);
       router.replace(`/?${params.toString()}`);
     }
   }, [roomId, router]);
