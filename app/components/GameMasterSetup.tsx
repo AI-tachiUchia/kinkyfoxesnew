@@ -80,13 +80,14 @@ export default function GameMasterSetup({
         const partnerDist = partnerSettings?.distance || '';
         const bothChose = partnerOnline && distance && partnerDist;
         const agree = !partnerOnline || !partnerDist || distance === partnerDist;
+        const canAdvance = !partnerOnline || (!!partnerDist && distance === partnerDist);
         return (
           <div className="flex flex-col gap-3">
             {distanceOptions.map(({ val, emoji, label }) => {
               const isMyChoice = distance === val;
               const isPartnerChoice = partnerOnline && partnerDist === val;
               return (
-                <button key={val} onClick={() => { setDistance(val); if (val !== "custom" && agree) setStep(1); }}
+                <button key={val} onClick={() => { setDistance(val); if (val !== "custom" && (!partnerOnline || (!!partnerDist && partnerDist === val))) setStep(1); }}
                   className={`p-4 border rounded-xl transition-all text-left flex items-center gap-3 ${isMyChoice ? 'bg-[#d97757]/20 border-[#d97757] text-white' : 'bg-[#181c22] border-white/10 hover:border-[#d97757]/50 text-gray-300'}`}>
                   <span className="text-xl">{emoji}</span>
                   <span className="flex-1">{label}</span>
@@ -131,8 +132,13 @@ export default function GameMasterSetup({
                 )}
               </div>
             )}
-            {distance && agree && distance !== 'custom' && (
+            {distance && canAdvance && distance !== 'custom' && (
               <button onClick={() => setStep(1)} className="mt-1 w-full p-3 bg-[#d97757] hover:bg-[#e08568] text-[#121418] font-bold rounded-xl transition-all shadow-[0_2px_10px_rgba(217,119,87,0.2)]">Weiter</button>
+            )}
+            {partnerOnline && distance && !partnerDist && distance !== 'custom' && (
+              <p className="text-center text-xs text-gray-400 italic pt-1">
+                Warte auf {partnerName || 'Partner'}...
+              </p>
             )}
           </div>
         );
@@ -145,6 +151,8 @@ export default function GameMasterSetup({
         const idx = Math.max(1, Math.min(5, heatLevel || 3)) - 1;
         const color = heatColors[idx];
         const partnerHeat = partnerSettings?.heatLevel;
+        // Gate advancement: if partner is online, they must have broadcast a heat level.
+        const heatCanAdvance = !partnerOnline || partnerHeat !== null;
         const agreedHeat = partnerOnline && partnerHeat !== null
           ? resolveHeatLevel(heatLevel || 3, partnerHeat, true)
           : null;
@@ -189,7 +197,14 @@ export default function GameMasterSetup({
                 </span>
               </div>
             )}
-            <button onClick={() => setStep(2)} className="w-full p-3 bg-[#d97757] hover:bg-[#e08568] text-[#121418] font-bold rounded-xl transition-all mt-2 shadow-[0_2px_10px_rgba(217,119,87,0.2)]">Weiter</button>
+            {partnerOnline && partnerHeat === null && (
+              <p className="text-center text-xs text-gray-400 italic">
+                Warte auf {partnerName || 'Partner'}...
+              </p>
+            )}
+            {heatCanAdvance && (
+              <button onClick={() => setStep(2)} className="w-full p-3 bg-[#d97757] hover:bg-[#e08568] text-[#121418] font-bold rounded-xl transition-all mt-2 shadow-[0_2px_10px_rgba(217,119,87,0.2)]">Weiter</button>
+            )}
           </div>
         );
       }

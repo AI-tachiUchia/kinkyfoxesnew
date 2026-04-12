@@ -120,6 +120,9 @@ function HomeContent({ session }: { session: any }) {
   const [vibe, setVibe] = useState("");
   const [template, setTemplate] = useState("");
   const [heatLevel, setHeatLevel] = useState(3);
+  // Tracks whether the user has explicitly moved the heat slider this session.
+  // Until touched, we don't broadcast heatLevel so the partner's gate stays closed.
+  const heatTouched = useRef(false);
   // Safety rail — survived prompt-master-update simplification (2026-04-11)
   const [hardLimits, setHardLimits] = useState("");
   const [game, setGame] = useState<GeneratedGame | null>(null);
@@ -191,16 +194,31 @@ function HomeContent({ session }: { session: any }) {
 
   const stateRef = useRef({ distance, customDistance, toys, vibe, template, game, isGenerating, isComplicating, isRefining, savedToys, heatLevel, hardLimits });
   const toysInputRef = useRef<HTMLInputElement>(null);
+  // Stable per-tab identity — survives same-account multi-tab sessions.
+  // We must NOT use session?.user?.id for self-filtering in presence because
+  // two tabs from the same account share the same user_id, causing both to be
+  // filtered out and partnerOnline to stay false permanently.
+  const tabId = useRef(Math.random().toString(36).slice(2));
   useEffect(() => {
     stateRef.current = { distance, customDistance, toys, vibe, template, game, isGenerating, isComplicating, isRefining, savedToys, heatLevel, hardLimits };
   }, [distance, customDistance, toys, vibe, template, game, isGenerating, isComplicating, isRefining, savedToys, heatLevel, hardLimits]);
 
   // Initialize Room ID
+  // If the URL already has a ?room= param (e.g. partner shared a link), use it and
+  // persist it to sessionStorage so a refresh in this tab rejoins the same room.
+  // If there is no URL param, check sessionStorage first before generating a new ID —
+  // this prevents a refresh from silently moving the player to a brand-new empty room
+  // while their partner still sees them as "online" in the old one (ghost session).
   useEffect(() => {
-    if (!roomId) {
-      const newRoomId = Math.random().toString(36).substring(2, 9);
+    if (roomId) {
+      // URL has a room — persist it so a refresh rejoins here.
+      sessionStorage.setItem('foxRoomId', roomId);
+    } else {
+      const saved = sessionStorage.getItem('foxRoomId');
+      const resolvedId = saved || Math.random().toString(36).substring(2, 9);
+      if (!saved) sessionStorage.setItem('foxRoomId', resolvedId);
       const params = new URLSearchParams(window.location.search);
-      params.set('room', newRoomId);
+      params.set('room', resolvedId);
       router.replace(`/?${params.toString()}`);
     }
   }, [roomId, router]);
@@ -255,7 +273,7 @@ function HomeContent({ session }: { session: any }) {
         newChannel.send({
           type: 'broadcast',
           event: 'player-settings',
-          payload: { distance: currentState.distance, heatLevel: currentState.heatLevel }
+          payload: { distance: currentState.distance, ...(heatTouched.current ? { heatLevel: currentState.heatLevel } : {}) }
         });
         if (currentState.savedToys.length > 0) {
           newChannel.send({
@@ -267,12 +285,13 @@ function HomeContent({ session }: { session: any }) {
       })
       .on('presence', { event: 'sync' }, () => {
         const state = newChannel.presenceState();
+        // Filter by tab_id (not user_id) so same-account multi-tab sessions work correctly.
         const others = Object.values(state).flat().filter(
-          (p: any) => p.user_id !== session?.user?.id
+          (p: any) => p.tab_id !== tabId.current
         );
-        
-        // Use a Set to handle duplicate entries by user_id
-        const uniqueOthers = Array.from(new Map(others.map((p: any) => [p.user_id, p])).values());
+
+        // Deduplicate by tab_id — each browser tab is a distinct partner slot.
+        const uniqueOthers = Array.from(new Map(others.map((p: any) => [p.tab_id, p])).values());
         
         if (uniqueOthers.length > 0) {
           const partner = uniqueOthers[0] as any;
@@ -285,17 +304,26 @@ function HomeContent({ session }: { session: any }) {
         }
       })
       .on('presence', { event: 'join' }, ({ newPresences }: any) => {
-        const partner = newPresences.find((p: any) => p.user_id !== session?.user?.id);
-        if (partner) addToast(`🦊 ${partner.display_name} ist der Session beigetreten!`);
+        const partner = newPresences.find((p: any) => p.tab_id !== tabId.current);
+        if (partner) {
+          addToast(`🦊 ${partner.display_name} ist der Session beigetreten!`);
+          // Re-broadcast our current settings so the newcomer immediately sees our choices.
+          newChannel.send({
+            type: 'broadcast',
+            event: 'player-settings',
+            payload: { distance: stateRef.current.distance, ...(heatTouched.current ? { heatLevel: stateRef.current.heatLevel } : {}) }
+          });
+        }
       })
       .on('presence', { event: 'leave' }, ({ leftPresences }: any) => {
-        const partner = leftPresences.find((p: any) => p.user_id !== session?.user?.id);
+        const partner = leftPresences.find((p: any) => p.tab_id !== tabId.current);
         if (partner) addToast(`${partner.display_name} hat die Session verlassen`);
       })
       .subscribe(async (status) => {
         if (status === 'SUBSCRIBED') {
           await newChannel.track({
             user_id: session?.user?.id,
+            tab_id: tabId.current,
             display_name: myDisplayName,
             activity: 'adjusting settings...',
             online_at: new Date().toISOString(),
@@ -303,6 +331,15 @@ function HomeContent({ session }: { session: any }) {
           newChannel.send({
             type: 'broadcast',
             event: 'request-sync',
+          });
+          // Share our initial distance/heat now that the channel is live.
+          // The useEffect-based broadcasts fire before SUBSCRIBED so they get dropped.
+          // Note: heatLevel is only included if the user has explicitly touched the slider,
+          // so the partner's gate stays closed until a real choice is made.
+          newChannel.send({
+            type: 'broadcast',
+            event: 'player-settings',
+            payload: { distance: stateRef.current.distance, ...(heatTouched.current ? { heatLevel: stateRef.current.heatLevel } : {}) }
           });
         }
       });
@@ -543,20 +580,23 @@ function HomeContent({ session }: { session: any }) {
     }
   };
 
-  // Resolve distance: if both chose the same (or solo), use it; otherwise pick deterministically
+  // Resolve distance: if both chose the same (or solo), use it; otherwise pick deterministically.
+  // Sort inputs before picking so both players always get the same result regardless of who is "my" vs "partner".
   const resolveDistance = (myDist: string, partnerDist: string, isPartnerOnline: boolean): string => {
     if (!isPartnerOnline || !partnerDist || myDist === partnerDist) return myDist || partnerDist;
     const hash = [...(roomId + 'distance')].reduce((acc, c) => acc + c.charCodeAt(0), 0);
-    return hash % 2 === 0 ? myDist : partnerDist;
+    const sorted = [myDist, partnerDist].sort();
+    return hash % 2 === 0 ? sorted[0] : sorted[1];
   };
 
-  // Resolve heat: average if integer, otherwise pick A or B deterministically
+  // Resolve heat: average if integer, otherwise pick lower or higher deterministically.
+  // Use min/max (not myHeat/partnerHeat) so both players get the same result regardless of argument order.
   const resolveHeatLevel = (myHeat: number, partnerHeat: number | null, isPartnerOnline: boolean): number => {
     if (!isPartnerOnline || partnerHeat === null) return myHeat;
     const avg = (myHeat + partnerHeat) / 2;
     if (Number.isInteger(avg)) return avg;
     const hash = [...(roomId + 'heat')].reduce((acc, c) => acc + c.charCodeAt(0), 0);
-    return hash % 2 === 0 ? myHeat : partnerHeat;
+    return hash % 2 === 0 ? Math.min(myHeat, partnerHeat) : Math.max(myHeat, partnerHeat);
   };
 
   const handleBackToSetup = () => {
@@ -849,7 +889,7 @@ function HomeContent({ session }: { session: any }) {
             <GameMasterSetup
               distance={distance} setDistance={setDistance}
               customDistance={customDistance} setCustomDistance={setCustomDistance}
-              heatLevel={heatLevel} setHeatLevel={setHeatLevel}
+              heatLevel={heatLevel} setHeatLevel={(v: number) => { heatTouched.current = true; setHeatLevel(v); }}
               vibe={vibe} setVibe={setVibe}
               template={template} setTemplate={setTemplate}
               toys={toys} setToys={setToys}
