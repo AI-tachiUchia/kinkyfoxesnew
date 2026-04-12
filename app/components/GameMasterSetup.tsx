@@ -151,6 +151,8 @@ export default function GameMasterSetup({
         const idx = Math.max(1, Math.min(5, heatLevel || 3)) - 1;
         const color = heatColors[idx];
         const partnerHeat = partnerSettings?.heatLevel;
+        // Gate advancement: if partner is online, they must have broadcast a heat level.
+        const heatCanAdvance = !partnerOnline || partnerHeat !== null;
         const agreedHeat = partnerOnline && partnerHeat !== null
           ? resolveHeatLevel(heatLevel || 3, partnerHeat, true)
           : null;
@@ -195,7 +197,14 @@ export default function GameMasterSetup({
                 </span>
               </div>
             )}
-            <button onClick={() => setStep(2)} className="w-full p-3 bg-[#d97757] hover:bg-[#e08568] text-[#121418] font-bold rounded-xl transition-all mt-2 shadow-[0_2px_10px_rgba(217,119,87,0.2)]">Weiter</button>
+            {partnerOnline && partnerHeat === null && (
+              <p className="text-center text-xs text-gray-400 italic">
+                Warte auf {partnerName || 'Partner'}...
+              </p>
+            )}
+            {heatCanAdvance && (
+              <button onClick={() => setStep(2)} className="w-full p-3 bg-[#d97757] hover:bg-[#e08568] text-[#121418] font-bold rounded-xl transition-all mt-2 shadow-[0_2px_10px_rgba(217,119,87,0.2)]">Weiter</button>
+            )}
           </div>
         );
       }
