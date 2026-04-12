@@ -286,7 +286,15 @@ function HomeContent({ session }: { session: any }) {
       })
       .on('presence', { event: 'join' }, ({ newPresences }: any) => {
         const partner = newPresences.find((p: any) => p.user_id !== session?.user?.id);
-        if (partner) addToast(`🦊 ${partner.display_name} ist der Session beigetreten!`);
+        if (partner) {
+          addToast(`🦊 ${partner.display_name} ist der Session beigetreten!`);
+          // Re-broadcast our current settings so the newcomer immediately sees our choices.
+          newChannel.send({
+            type: 'broadcast',
+            event: 'player-settings',
+            payload: { distance: stateRef.current.distance, heatLevel: stateRef.current.heatLevel }
+          });
+        }
       })
       .on('presence', { event: 'leave' }, ({ leftPresences }: any) => {
         const partner = leftPresences.find((p: any) => p.user_id !== session?.user?.id);
@@ -303,6 +311,13 @@ function HomeContent({ session }: { session: any }) {
           newChannel.send({
             type: 'broadcast',
             event: 'request-sync',
+          });
+          // Share our initial distance/heat now that the channel is live.
+          // The useEffect-based broadcasts fire before SUBSCRIBED so they get dropped.
+          newChannel.send({
+            type: 'broadcast',
+            event: 'player-settings',
+            payload: { distance: stateRef.current.distance, heatLevel: stateRef.current.heatLevel }
           });
         }
       });
@@ -543,20 +558,23 @@ function HomeContent({ session }: { session: any }) {
     }
   };
 
-  // Resolve distance: if both chose the same (or solo), use it; otherwise pick deterministically
+  // Resolve distance: if both chose the same (or solo), use it; otherwise pick deterministically.
+  // Sort inputs before picking so both players always get the same result regardless of who is "my" vs "partner".
   const resolveDistance = (myDist: string, partnerDist: string, isPartnerOnline: boolean): string => {
     if (!isPartnerOnline || !partnerDist || myDist === partnerDist) return myDist || partnerDist;
     const hash = [...(roomId + 'distance')].reduce((acc, c) => acc + c.charCodeAt(0), 0);
-    return hash % 2 === 0 ? myDist : partnerDist;
+    const sorted = [myDist, partnerDist].sort();
+    return hash % 2 === 0 ? sorted[0] : sorted[1];
   };
 
-  // Resolve heat: average if integer, otherwise pick A or B deterministically
+  // Resolve heat: average if integer, otherwise pick lower or higher deterministically.
+  // Use min/max (not myHeat/partnerHeat) so both players get the same result regardless of argument order.
   const resolveHeatLevel = (myHeat: number, partnerHeat: number | null, isPartnerOnline: boolean): number => {
     if (!isPartnerOnline || partnerHeat === null) return myHeat;
     const avg = (myHeat + partnerHeat) / 2;
     if (Number.isInteger(avg)) return avg;
     const hash = [...(roomId + 'heat')].reduce((acc, c) => acc + c.charCodeAt(0), 0);
-    return hash % 2 === 0 ? myHeat : partnerHeat;
+    return hash % 2 === 0 ? Math.min(myHeat, partnerHeat) : Math.max(myHeat, partnerHeat);
   };
 
   const handleBackToSetup = () => {
